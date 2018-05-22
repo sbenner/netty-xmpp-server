@@ -19,24 +19,60 @@
   <dependencyManagement>
     <dependencies>
       <!-- Camel BOM -->
+        <dependency>
+            <!-- Import dependency management from Spring Boot -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-dependencies</artifactId>
+            <version>1.5.12.RELEASE</version>
+            <scope>import</scope>
+            <type>pom</type>
+        </dependency>
       <dependency>
         <groupId>org.apache.camel</groupId>
         <artifactId>camel-parent</artifactId>
         <version>2.21.1</version>
         <scope>import</scope>
-        <type>pom</type>
+          <type>pom</type>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
-
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter</artifactId>
+          <exclusions>
+              <exclusion>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-tomcat</artifactId>
+              </exclusion>
+          </exclusions>
+      </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-core</artifactId>
     </dependency>
-
+      <dependency>
+          <groupId>org.apache.camel</groupId>
+          <artifactId>camel-stream</artifactId>
+      </dependency>
+      <!--<dependency>-->
+      <!--<groupId>com.heim</groupId>-->
+      <!--<artifactId>boot-utils</artifactId>-->
+      <!--<version>1.0-SNAPSHOT</version>-->
+      <!--</dependency>-->
     <!-- logging -->
+      <!-- https://mvnrepository.com/artifact/com.fasterxml/aalto-xml -->
+      <dependency>
+          <groupId>com.fasterxml</groupId>
+          <artifactId>aalto-xml</artifactId>
+          <version>1.0.0</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+      </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
@@ -73,6 +109,32 @@
           <artifactId>xep0045-muc</artifactId>
           <version>0.7</version>
       </dependency>
+
+      <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-spring-boot -->
+      <dependency>
+          <groupId>org.apache.camel</groupId>
+          <artifactId>camel-spring-boot</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>org.apache.camel</groupId>
+          <artifactId>camel-netty4</artifactId>
+          <!-- use the same version as your Camel core version -->
+      </dependency>
+
+      <!-- https://mvnrepository.com/artifact/jivesoftware/smack -->
+      <dependency>
+          <groupId>jivesoftware</groupId>
+          <artifactId>smack</artifactId>
+          <version>3.1.0</version>
+      </dependency>
+      <!-- https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-tcp -->
+      <dependency>
+          <groupId>org.igniterealtime.smack</groupId>
+          <artifactId>smack-tcp</artifactId>
+          <version>4.2.4</version>
+      </dependency>
+
 
       <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-xmpp -->
     <dependency>
