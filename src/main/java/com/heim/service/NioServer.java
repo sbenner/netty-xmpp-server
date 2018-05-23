@@ -16,12 +16,20 @@ import java.util.Iterator;
 public class NioServer implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(NioServer.class);
+    static String auth  ="<iq type='result' id='auth1'>" +
+            "<query xmlns='jabber:iq:auth'>" +
+            "<username/>" +
+            "<password/>" +
+            "<resource/>" +
+            "</query>" +
+            "</iq>";
+
     static String text = "<stream:stream" +
             "    xmlns='jabber:client'" +
             "    xmlns:stream='http://etherx.jabber.org/streams'" +
             "    from='localhost'" +
-            "    id='c2s_234'" +
-            "    version='1.0'>" +
+            "    id='c2s_234'>"
+            +
             "<stream:features>" +
             "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
             "    <mechanism>PLAIN</mechanism>" +
@@ -79,9 +87,30 @@ public class NioServer implements Runnable {
         }
     }
 
-    private ByteBuffer welcome() {
-        return ByteBuffer.wrap(text.getBytes());
+    static String error ="<failure xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
+            "<invalid-authzid/>" +
+            "</failure>";
+    static String success="<success xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>";
+
+    static String ok="<stream:stream" +
+            "     from='localhost'" +
+            "     id='gPybzaOzBmaADgxKXu9UClbprp0='" +
+            "     to='localhost'" +
+            "     version='1.0'" +
+            "     xml:lang='en'" +
+            "     xmlns='jabber:client'" +
+            "     xmlns:stream='http://etherx.jabber.org/streams'>";
+    static String features = "<stream:features>" +
+            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
+            "</stream:features>";
+
+
+
+    private ByteBuffer welcome(String t) {
+        return ByteBuffer.wrap(t.getBytes());
     }
+
+
 
     private void handleAccept(SelectionKey key) throws IOException {
         SocketChannel sc = ((ServerSocketChannel) key.channel()).accept();
@@ -101,6 +130,8 @@ public class NioServer implements Runnable {
 
     }
 
+
+
     private void readHeader(SocketChannel ch) throws IOException {
         int read;
 
@@ -109,12 +140,16 @@ public class NioServer implements Runnable {
             ByteBuffer body = ByteBuffer.allocate(512);
 
             while ((read = ch.read(body)) > 0) {
-                logger.info("read bytes : " + read);
+             //   logger.info("read bytes : " + read);
                 body.flip();
                 byte chunk[] = new byte[read];
                 body.get(chunk);
+                String out =   new String(body.array()).trim();
                 System.out.println(new String(body.array()).trim());
-                ch.write(welcome());
+                ch.write(welcome(text));
+                if(out.contains("<username>")){
+                    ch.write(welcome(auth));
+                }
             }
 
             // logger.info(messageMap);

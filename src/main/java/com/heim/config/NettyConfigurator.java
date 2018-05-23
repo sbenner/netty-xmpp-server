@@ -47,7 +47,7 @@ public class NettyConfigurator extends SpringRouteBuilder {
 
         SharedConnectionXmppEndpoint
                 endpoint2 = new SharedConnectionXmppEndpoint(
-                "xmpp://sergey@localhost:5222?password=secret",
+                "xmpp://sergey@localhost:5222/test?password=secret",
                 xmppComponent);
 
         from(endpoint2).
