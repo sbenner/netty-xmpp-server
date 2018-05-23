@@ -28,13 +28,13 @@ public class NioServer implements Runnable {
             "    xmlns='jabber:client'" +
             "    xmlns:stream='http://etherx.jabber.org/streams'" +
             "    from='localhost'" +
-            "    id='c2s_234'>"
-            +
-            "<stream:features>" +
-            "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
-            "    <mechanism>PLAIN</mechanism>" +
-            "  </mechanisms>" +
-            "</stream:features>";
+            "    id='c2s_234'>";
+    //            +
+//            "<stream:features>" +
+//            "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
+//            "    <mechanism>PLAIN</mechanism>" +
+//            "  </mechanisms>" +
+//            "</stream:features>";
     static String res1 = "<stream:stream" +
             "xmlns='jabber:server'" +
             "xmlns:stream='http://etherx.jabber.org/streams'" +
@@ -118,7 +118,7 @@ public class NioServer implements Runnable {
                 .append(":").append(sc.socket().getPort()).toString();
         sc.configureBlocking(false);
         sc.register(selector, SelectionKey.OP_READ, address);
-        //  sc.write(welcomeBuf);
+        sc.write(welcome(text));
         //  welcomeBuf.rewind();
         logger.info("accepted connection from: " + address);
 
@@ -134,7 +134,7 @@ public class NioServer implements Runnable {
 
     private void readHeader(SocketChannel ch) throws IOException {
         int read;
-        ch.write(welcome(text));
+
         try {
 
             ByteBuffer body = ByteBuffer.allocate(512);
