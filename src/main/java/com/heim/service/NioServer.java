@@ -16,7 +16,7 @@ import java.util.Iterator;
 public class NioServer implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(NioServer.class);
-    static String auth  ="<iq type='result' id='auth1'>" +
+    static String auth = "<iq type='result' id='auth_1'>" +
             "<query xmlns='jabber:iq:auth'>" +
             "<username/>" +
             "<password/>" +
@@ -134,19 +134,20 @@ public class NioServer implements Runnable {
 
     private void readHeader(SocketChannel ch) throws IOException {
         int read;
-
+        ch.write(welcome(text));
         try {
 
             ByteBuffer body = ByteBuffer.allocate(512);
 
             while ((read = ch.read(body)) > 0) {
              //   logger.info("read bytes : " + read);
+
                 body.flip();
                 byte chunk[] = new byte[read];
                 body.get(chunk);
                 String out =   new String(body.array()).trim();
-                System.out.println(new String(body.array()).trim());
-                ch.write(welcome(text));
+                System.out.println(out);
+
                 if(out.contains("<username>")){
                     ch.write(welcome(auth));
                 }
