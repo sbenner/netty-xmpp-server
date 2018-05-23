@@ -63,52 +63,52 @@
       <!--</dependency>-->
     <!-- logging -->
       <!-- https://mvnrepository.com/artifact/com.fasterxml/aalto-xml -->
-      <dependency>
-          <groupId>com.fasterxml</groupId>
-          <artifactId>aalto-xml</artifactId>
-          <version>1.0.0</version>
-      </dependency>
+      <!--<dependency>-->
+      <!--<groupId>com.fasterxml</groupId>-->
+      <!--<artifactId>aalto-xml</artifactId>-->
+      <!--<version>1.0.0</version>-->
+      <!--</dependency>-->
 
-      <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-core</artifactId>
-      </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <scope>runtime</scope>
-    </dependency>
+      <!--<dependency>-->
+      <!--<groupId>com.fasterxml.jackson.core</groupId>-->
+      <!--<artifactId>jackson-core</artifactId>-->
+      <!--</dependency>-->
+      <!--<dependency>-->
+      <!--<groupId>org.apache.logging.log4j</groupId>-->
+      <!--<artifactId>log4j-api</artifactId>-->
+      <!--<scope>runtime</scope>-->
+      <!--</dependency>-->
+      <!--<dependency>-->
+      <!--<groupId>org.apache.logging.log4j</groupId>-->
+      <!--<artifactId>log4j-core</artifactId>-->
+      <!--<scope>runtime</scope>-->
+      <!--</dependency>-->
+      <!--<dependency>-->
+      <!--<groupId>org.apache.logging.log4j</groupId>-->
+      <!--<artifactId>log4j-slf4j-impl</artifactId>-->
+      <!--<scope>runtime</scope>-->
+      <!--</dependency>-->
 
     <!-- testing -->
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-test</artifactId>
-      <scope>test</scope>
-    </dependency>
+      <!--<dependency>-->
+      <!--<groupId>org.apache.camel</groupId>-->
+      <!--<artifactId>camel-test</artifactId>-->
+      <!--<scope>test</scope>-->
+      <!--</dependency>-->
 
       <!-- https://mvnrepository.com/artifact/org.apache.vysper/vysper-server -->
-      <dependency>
-          <groupId>org.apache.vysper</groupId>
-          <artifactId>vysper-core</artifactId>
-          <version>0.7</version>
-      </dependency>
+      <!--<dependency>-->
+      <!--<groupId>org.apache.vysper</groupId>-->
+      <!--<artifactId>vysper-core</artifactId>-->
+      <!--<version>0.7</version>-->
+      <!--</dependency>-->
 
-      <!-- https://mvnrepository.com/artifact/org.apache.vysper.extensions/xep0045-muc -->
-      <dependency>
-          <groupId>org.apache.vysper.extensions</groupId>
-          <artifactId>xep0045-muc</artifactId>
-          <version>0.7</version>
-      </dependency>
+      <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.apache.vysper.extensions/xep0045-muc &ndash;&gt;-->
+      <!--<dependency>-->
+      <!--<groupId>org.apache.vysper.extensions</groupId>-->
+      <!--<artifactId>xep0045-muc</artifactId>-->
+      <!--<version>0.7</version>-->
+      <!--</dependency>-->
 
       <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-spring-boot -->
       <dependency>
@@ -116,24 +116,24 @@
           <artifactId>camel-spring-boot</artifactId>
       </dependency>
 
-      <dependency>
-          <groupId>org.apache.camel</groupId>
-          <artifactId>camel-netty4</artifactId>
-          <!-- use the same version as your Camel core version -->
-      </dependency>
+      <!--<dependency>-->
+      <!--<groupId>org.apache.camel</groupId>-->
+      <!--<artifactId>camel-netty4</artifactId>-->
+      <!--&lt;!&ndash; use the same version as your Camel core version &ndash;&gt;-->
+      <!--</dependency>-->
 
-      <!-- https://mvnrepository.com/artifact/jivesoftware/smack -->
-      <dependency>
-          <groupId>jivesoftware</groupId>
-          <artifactId>smack</artifactId>
-          <version>3.1.0</version>
-      </dependency>
-      <!-- https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-tcp -->
-      <dependency>
-          <groupId>org.igniterealtime.smack</groupId>
-          <artifactId>smack-tcp</artifactId>
-          <version>4.2.4</version>
-      </dependency>
+      <!--&lt;!&ndash; https://mvnrepository.com/artifact/jivesoftware/smack &ndash;&gt;-->
+      <!--<dependency>-->
+      <!--<groupId>jivesoftware</groupId>-->
+      <!--<artifactId>smack</artifactId>-->
+      <!--<version>3.1.0</version>-->
+      <!--</dependency>-->
+      <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-tcp &ndash;&gt;-->
+      <!--<dependency>-->
+      <!--<groupId>org.igniterealtime.smack</groupId>-->
+      <!--<artifactId>smack-tcp</artifactId>-->
+      <!--<version>4.2.4</version>-->
+      <!--</dependency>-->
 
 
       <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-xmpp -->

@@ -1,10 +1,10 @@
 package com.heim.config;
 
-import com.heim.service.XmlHandler;
+//import com.heim.service.XmlHandler;
+
+import com.heim.service.SharedConnectionXmppEndpoint;
 import com.heim.service.XmppMessageHandler;
-import org.apache.camel.CamelContext;
-import org.apache.camel.component.netty4.NettyComponent;
-import org.apache.camel.component.netty4.NettyConfiguration;
+import org.apache.camel.component.xmpp.XmppComponent;
 import org.apache.camel.spring.SpringRouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -18,11 +18,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class NettyConfigurator extends SpringRouteBuilder {
 
+
     @Autowired
     XmppMessageHandler messageHandler;
 
-    @Autowired
-    XmlHandler xmlHandler;
+//    @Autowired
+//    XmlHandler xmlHandler;
 
 //    @PostConstruct
 //    public void init(){
@@ -33,15 +34,25 @@ public class NettyConfigurator extends SpringRouteBuilder {
 //                getComponent("netty4")).setConfiguration(configuration);
 //    }
 
+
     @Override
     public void configure() throws Exception {
-        CamelContext context = getContext();
-        NettyConfiguration configuration = new NettyConfiguration();
-        configuration.setDecoder(xmlHandler);
-        ((NettyComponent) context.
-                getComponent("netty4")).setConfiguration(configuration);
-        from("netty4:tcp://localhost:5222")
-                .process(messageHandler);
+//        CamelContext context = getContext();
+//
+//        XmppEndpoint endpoint =
+//                getContext().getEndpoint
+//                        ("xmpp://sergey@localhost:5222?password=secret",
+//                                XmppEndpoint.class);
+        XmppComponent xmppComponent = getContext().getComponent("xmpp", XmppComponent.class);
+
+        SharedConnectionXmppEndpoint
+                endpoint2 = new SharedConnectionXmppEndpoint(
+                "xmpp://sergey@localhost:5222?password=secret",
+                xmppComponent);
+
+        from(endpoint2).
+                setBody(constant("I will win!\n Your Superman.")).
+                to(endpoint2);
 
 
     }
