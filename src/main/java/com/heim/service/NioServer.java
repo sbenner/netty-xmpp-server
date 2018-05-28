@@ -2,8 +2,10 @@ package com.heim.service;
 
 
 import com.heim.models.Auth;
+import com.heim.utils.Base64Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
@@ -11,7 +13,6 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetSocketAddress;
-import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -19,7 +20,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NioServer implements Runnable {
 
@@ -31,6 +33,7 @@ public class NioServer implements Runnable {
             "<resource/>" +
             "</query>" +
             "</iq>";
+
 
     static String text = "<stream:stream" +
             "    xmlns='jabber:client'" +
@@ -81,6 +84,12 @@ public class NioServer implements Runnable {
         (new Thread(server)).start();
     }
 
+    static String finish = "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' " +
+            " id='c2s_345' from='example.com' version='1.0'> <stream:features>" +
+            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
+            "<session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>" +
+            "</stream:features>";
+
     public void run() {
         try {
             logger.info("Server starting on port " + this.port);
@@ -120,6 +129,8 @@ public class NioServer implements Runnable {
             "     xml:lang='en'" +
             "     xmlns='jabber:client'" +
             "     xmlns:stream='http://etherx.jabber.org/streams'>";
+    Map<String, String> sessionsState = new ConcurrentHashMap<>();
+
 //    static String features = "<stream:features>" +
 //            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
 //            "</stream:features>";
@@ -130,18 +141,23 @@ public class NioServer implements Runnable {
         return ByteBuffer.wrap(t.getBytes());
     }
 
+    private String makeAddress(SocketChannel sc) {
+        return (new StringBuilder(sc.socket().getInetAddress().toString()))
+                .append(":").append(sc.socket().getPort()).toString();
+    }
+
+
     private void handleAccept(SelectionKey key) throws IOException {
         SocketChannel sc = ((ServerSocketChannel) key.channel()).accept();
-
+        String address = makeAddress(sc);
         sc.setOption(StandardSocketOptions.TCP_NODELAY, true);
-        String address = (new StringBuilder(sc.socket().getInetAddress().toString()))
-                .append(":").append(sc.socket().getPort()).toString();
+
         sc.configureBlocking(false);
         sc.register(selector, SelectionKey.OP_READ, address);
         sc.write(welcome(text));
         //   sc.write(welcome(auth));
         sc.write(welcome(features));
-
+        sessionsState.put(address, "");
         //  welcomeBuf.rewind();
         logger.info("accepted connection from: " + address);
 
@@ -150,13 +166,13 @@ public class NioServer implements Runnable {
     private void handleRead(SelectionKey key) throws IOException {
         SocketChannel ch = (SocketChannel) key.channel();
 
-        Set<SocketOption<?>> options = ch.supportedOptions();
         readHeader(ch);
 
     }
 
     private void readHeader(SocketChannel ch) throws IOException {
         int read;
+        String addy = makeAddress(ch);
 
         try {
 
@@ -171,10 +187,21 @@ public class NioServer implements Runnable {
                 String out =   new String(body.array()).trim();
                 System.out.println(out);
 
+                if (!StringUtils.isEmpty(addy)) {
+                    String val = sessionsState.get(addy);
+                    if (!StringUtils.isEmpty(val)) {
+                        ch.write(welcome(val));
+                        //     return;
+                    }
+                }
+
+
                 if (out.contains("<auth")) {
                     Auth auth = (Auth) unmarshaller(Auth.class).unmarshal(new StreamSource(new StringReader(out)));
                     System.out.println(auth);
-                    //  ch.write(welcome(res1+features));
+                    Base64Utils.decode(auth.getValue());
+                    ch.write(welcome(success));
+                    sessionsState.put(makeAddress(ch), finish);
                 }
             }
 
