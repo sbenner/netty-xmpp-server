@@ -6,7 +6,7 @@
 //
 
 
-package com.heim.models;
+package com.heim.models.auth;
 
 import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;

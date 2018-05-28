@@ -6,7 +6,7 @@
 //
 
 
-package com.heim.models;
+package com.heim.models.auth;
 
 import org.w3c.dom.Element;
 

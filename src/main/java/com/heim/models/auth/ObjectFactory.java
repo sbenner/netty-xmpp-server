@@ -6,8 +6,10 @@
 //
 
 
-package com.heim.models;
+package com.heim.models.auth;
 
+
+import com.heim.Bind;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElementDecl;
@@ -56,6 +58,9 @@ public class ObjectFactory {
         return new Failure();
     }
 
+    public Bind createBind() {
+        return new Bind();
+    }
     /**
      * Create an instance of {@link Text }
      */

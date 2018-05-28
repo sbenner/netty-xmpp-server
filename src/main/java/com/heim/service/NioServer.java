@@ -1,7 +1,7 @@
 package com.heim.service;
 
 
-import com.heim.models.Auth;
+import com.heim.models.auth.Auth;
 import com.heim.utils.Base64Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,6 +193,15 @@ public class NioServer implements Runnable {
                         ch.write(welcome(val));
                         //     return;
                     }
+                }
+
+                if (out.startsWith("<iq")) {
+
+//                    <iq type='result' id='bind_2'>
+//  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
+//    <jid>somenode@example.com/someresource</jid>
+//  </bind>
+//</iq>
                 }
 
 
