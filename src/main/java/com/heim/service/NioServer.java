@@ -1,17 +1,25 @@
 package com.heim.service;
 
 
+import com.heim.models.Auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.InetSocketAddress;
+import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.Set;
 
 public class NioServer implements Runnable {
 
@@ -28,13 +36,15 @@ public class NioServer implements Runnable {
             "    xmlns='jabber:client'" +
             "    xmlns:stream='http://etherx.jabber.org/streams'" +
             "    from='localhost'" +
-            "    id='c2s_234'>";
-    //            +
-//            "<stream:features>" +
-//            "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
-//            "    <mechanism>PLAIN</mechanism>" +
-//            "  </mechanisms>" +
-//            "</stream:features>";
+            "    id='c2s_234'" +
+            "    version='1.0'" +
+            ">"; //
+
+    static String features = "<stream:features>" +
+            "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
+            "    <mechanism>PLAIN</mechanism>" +
+            "  </mechanisms>" +
+            "</stream:features>";
     static String res1 = "<stream:stream" +
             "xmlns='jabber:server'" +
             "xmlns:stream='http://etherx.jabber.org/streams'" +
@@ -47,13 +57,23 @@ public class NioServer implements Runnable {
     private ServerSocketChannel serverSocketChannel;
     private Selector selector;
 
+    //   Customer customer = (Customer) jaxbUnmarshaller.unmarshal(file);
+
     public NioServer(int port) throws IOException {
         this.port = port;
         this.serverSocketChannel = ServerSocketChannel.open();
+
+        // this.serverSocketChannel.setOption(ChannelOption.TCP_NODELAY,true);
         this.serverSocketChannel.socket().bind(new InetSocketAddress(port));
         this.serverSocketChannel.configureBlocking(false);
         this.selector = Selector.open();
         this.serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+    }
+
+    public Unmarshaller unmarshaller(Class clazz) throws Exception {
+        JAXBContext jaxbContext = JAXBContext.newInstance(clazz);
+
+        return jaxbContext.createUnmarshaller();
     }
 
     public static void main(String[] args) throws IOException {
@@ -100,9 +120,9 @@ public class NioServer implements Runnable {
             "     xml:lang='en'" +
             "     xmlns='jabber:client'" +
             "     xmlns:stream='http://etherx.jabber.org/streams'>";
-    static String features = "<stream:features>" +
-            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
-            "</stream:features>";
+//    static String features = "<stream:features>" +
+//            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
+//            "</stream:features>";
 
 
 
@@ -110,15 +130,18 @@ public class NioServer implements Runnable {
         return ByteBuffer.wrap(t.getBytes());
     }
 
-
-
     private void handleAccept(SelectionKey key) throws IOException {
         SocketChannel sc = ((ServerSocketChannel) key.channel()).accept();
+
+        sc.setOption(StandardSocketOptions.TCP_NODELAY, true);
         String address = (new StringBuilder(sc.socket().getInetAddress().toString()))
                 .append(":").append(sc.socket().getPort()).toString();
         sc.configureBlocking(false);
         sc.register(selector, SelectionKey.OP_READ, address);
         sc.write(welcome(text));
+        //   sc.write(welcome(auth));
+        sc.write(welcome(features));
+
         //  welcomeBuf.rewind();
         logger.info("accepted connection from: " + address);
 
@@ -126,11 +149,11 @@ public class NioServer implements Runnable {
 
     private void handleRead(SelectionKey key) throws IOException {
         SocketChannel ch = (SocketChannel) key.channel();
+
+        Set<SocketOption<?>> options = ch.supportedOptions();
         readHeader(ch);
 
     }
-
-
 
     private void readHeader(SocketChannel ch) throws IOException {
         int read;
@@ -148,8 +171,10 @@ public class NioServer implements Runnable {
                 String out =   new String(body.array()).trim();
                 System.out.println(out);
 
-                if(out.contains("<username>")){
-                    ch.write(welcome(auth));
+                if (out.contains("<auth")) {
+                    Auth auth = (Auth) unmarshaller(Auth.class).unmarshal(new StreamSource(new StringReader(out)));
+                    System.out.println(auth);
+                    //  ch.write(welcome(res1+features));
                 }
             }
 
