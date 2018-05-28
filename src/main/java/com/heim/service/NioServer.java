@@ -2,16 +2,21 @@ package com.heim.service;
 
 
 import com.heim.models.auth.Auth;
+import com.heim.models.bind.Bind;
+import com.heim.models.client.Iq;
 import com.heim.utils.Base64Utils;
+import org.eclipse.persistence.jaxb.JAXBContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
@@ -73,22 +78,39 @@ public class NioServer implements Runnable {
         this.serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
-    public Unmarshaller unmarshaller(Class clazz) throws Exception {
-        JAXBContext jaxbContext = JAXBContext.newInstance(clazz);
+    static Unmarshaller unmarshaller;
+    static Marshaller marshaller;
+    static String finish =
+            "<stream:stream xmlns='jabber:client' " +
+                    "xmlns:stream='http://etherx.jabber.org/streams' " +
+                    "id='c2s_345' from='localhost' version='1.0'> " +
+                    "<stream:features>" +
+            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
+            "<session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>" +
+            "</stream:features>";
+    static String iqres =
+            "<iq type='result' id='bind_1'>" +
+                    "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>" +
+                    "<jid>test@localhost/frosty</jid>" +
+                    "</bind>" +
+                    "</iq>";
 
-        return jaxbContext.createUnmarshaller();
-    }
 
     public static void main(String[] args) throws IOException {
         NioServer server = new NioServer(5222);
         (new Thread(server)).start();
     }
 
-    static String finish = "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' " +
-            " id='c2s_345' from='example.com' version='1.0'> <stream:features>" +
-            "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
-            "<session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>" +
-            "</stream:features>";
+    public static Unmarshaller unmarshaller() throws Exception {
+        if (unmarshaller == null) {
+            JAXBContext jc = JAXBContextFactory
+                    .createContext("com.heim.models.auth:com.heim.models.bind:com.heim.models.client:com.heim.models.xmpp_stanzas", null, null);
+            unmarshaller = jc.createUnmarshaller();
+
+        }
+
+        return unmarshaller;
+    }
 
     public void run() {
         try {
@@ -170,6 +192,17 @@ public class NioServer implements Runnable {
 
     }
 
+    public static Marshaller marshaller() throws Exception {
+        if (marshaller == null) {
+            JAXBContext jc = JAXBContextFactory
+                    .createContext("com.heim.models.auth:com.heim.models.bind:com.heim.models.client:com.heim.models.xmpp_stanzas", null, null);
+            marshaller = jc.createMarshaller();
+
+        }
+
+        return marshaller;
+    }
+
     private void readHeader(SocketChannel ch) throws IOException {
         int read;
         String addy = makeAddress(ch);
@@ -197,18 +230,48 @@ public class NioServer implements Runnable {
 
                 if (out.startsWith("<iq")) {
 
-//                    <iq type='result' id='bind_2'>
-//  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
-//    <jid>somenode@example.com/someresource</jid>
-//  </bind>
+                    Object iq = (Iq) unmarshaller()
+                            .unmarshal
+                                    (new StreamSource(new StringReader(out)));
+                    System.out.println(iq);
+                    Bind b = (Bind) ((Iq) iq).getAny();
+                    b.setResource(null);
+                    b.setJid("test@localhost/" + b.getResource());
+                    Iq i = new Iq();
+
+                    i.setAny(b);
+                    i.setType("result");
+                    i.setId(((Iq) iq).getId());
+                    StringWriter sw = new StringWriter();
+                    marshaller().marshal(i, sw);
+                    String res =
+                            sw.toString()
+                                    .replaceAll(":ns0", "")
+                                    .replaceAll("ns0:", "")
+                                    .replaceAll(":ns3", "")
+                                    .replaceAll(":ns2", "")
+                                    .replaceAll(":ns1", "")
+                                    .replaceAll("ns3:", "")
+                                    .replaceAll("ns2:", "")
+                                    .replaceAll("ns1:", "");
+                    System.out.println(res);
+                    System.out.println(iqres);
+                    ch.write(welcome(iqres));
+//                    Object bind = (Bind) unmarshaller()
+//                            .unmarshal(new StreamSource(new StringReader(out)));
+//                    System.out.println(bind);
+//<iq type='result' id='bind_1'>
+//<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
+//<jid>test@localhost/someresource</jid>
+//</bind>
 //</iq>
                 }
 
 
-                if (out.contains("<auth")) {
-                    Auth auth = (Auth) unmarshaller(Auth.class).unmarshal(new StreamSource(new StringReader(out)));
+                if (out.startsWith("<auth")) {
+                    Object auth = unmarshaller().unmarshal(new StreamSource(new StringReader(out)));
                     System.out.println(auth);
-                    Base64Utils.decode(auth.getValue());
+                    Base64Utils.decode(((Auth) auth).getValue());
                     ch.write(welcome(success));
                     sessionsState.put(makeAddress(ch), finish);
                 }

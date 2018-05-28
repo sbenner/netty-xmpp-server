@@ -9,7 +9,8 @@
 package com.heim.models.auth;
 
 
-import com.heim.Bind;
+import com.heim.models.bind.Bind;
+import com.heim.models.xmpp_stanzas.Text;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElementDecl;
@@ -44,9 +45,7 @@ public class ObjectFactory {
     public ObjectFactory() {
     }
 
-    /**
-     * Create an instance of {@link ietf.params.xml.ns.xmpp_sasl.Auth }
-     */
+
     public Auth createAuth() {
         return new Auth();
     }
@@ -67,6 +66,7 @@ public class ObjectFactory {
     public Text createText() {
         return new Text();
     }
+
 
     /**
      * Create an instance of {@link Mechanisms }

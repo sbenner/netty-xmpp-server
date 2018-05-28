@@ -9,6 +9,8 @@
 package com.heim.models.auth;
 
 
+import com.heim.models.xmpp_stanzas.Text;
+
 import javax.xml.bind.annotation.*;
 
 
