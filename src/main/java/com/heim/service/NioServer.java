@@ -91,7 +91,7 @@ public class NioServer implements Runnable {
     static String iqres =
             "<iq type=\"result\" id=\"bind_1\" to=\"localhost\">" +
                     " <bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\">" +
-                    " <jid>camel_producer@localhost/Psi</jid>" +
+                    " <jid>camel_producer@localhost/%s</jid>" +
                     " </bind>" +
                     " </iq>";
 
@@ -240,8 +240,9 @@ public class NioServer implements Runnable {
                 body.flip();
                 byte chunk[] = new byte[read];
                 body.get(chunk);
-                String out =   new String(body.array()).trim();
+                String out = new String(body.array()).trim().replaceAll("xmlns=\"jabber:client\"", "");
                 System.out.println(out);
+
 
 //                if (!StringUtils.isEmpty(addy)) {
 //                    String val = sessionsState.get(addy);
@@ -260,65 +261,12 @@ public class NioServer implements Runnable {
                     ch.write(welcome(finish));
                     sessionsState.put(makeAddress(ch), finish);
                 }
-
-                if (out.contains("<iq")) {
-
-                    String iqstr = out.substring(out.indexOf("<iq"),
-                            out.length()).replaceAll("xmlns=\"jabber:client\"", "");
-
-                    Iq iq = (Iq) unmarshaller()
-                            .unmarshal
-                                    (new StreamSource(new StringReader(iqstr)));
-
-                    if (iqstr.contains("<bind")) {
-
-                        System.out.println(iq);
-                        Bind b = (Bind) ((Iq) iq).getAny();
-                        b.setResource(null);
-                        b.setJid("test@localhost/" + b.getResource());
-                        Iq i = new Iq();
-
-                        i.setAny(b);
-                        i.setType("result");
-                        i.setId(((Iq) iq).getId());
-                        StringWriter sw = new StringWriter();
-                        marshaller().marshal(i, sw);
-                        String res =
-                                sw.toString()
-                                        .replaceAll(":ns0", "")
-                                        .replaceAll("ns0:", "")
-                                        .replaceAll(":ns3", "")
-                                        .replaceAll(":ns2", "")
-                                        .replaceAll(":ns1", "")
-                                        .replaceAll("ns3:", "")
-                                        .replaceAll("ns2:", "")
-                                        .replaceAll("ns1:", "");
-                        //System.out.println(res);
-                        System.out.println(iqres);
-                        ch.write(welcome(iqres));
-                    }
-                    //  if(iqstr.contains("<session")){
-                    else if (iq.getType().equals("set") && ((ElementNSImpl) iq.getAny()).getLocalName().equals("session")) {
-                        ch.write(welcome("<iq type=\"result\" id=\"" + iq.getId() + "\"/>"));
-                    } else if (iq.getType().equals("get") && ((ElementNSImpl) iq.getAny()).getLocalName().equals("query")) {
-                        ch.write(welcome(String.format(rooster, iq.getId())));
-                    }
-                    //}
-//                    if(iqstr.contains("query")&&iqstr.contains){
-//                        if(iq.getType().equals("set")){
-//                            ch.write(welcome("<iq type=\"result\" id=\""+iq.getId()+"\"/>"));
-//                        }
-//                    }
-                    // ch.write(welcome(success));
-//                    Object bind = (Bind) unmarshaller()
-//                            .unmarshal(new StreamSource(new StringReader(out)));
-//                    System.out.println(bind);
-//<iq type='result' id='bind_1'>
-//<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
-//<jid>test@localhost/someresource</jid>
-//</bind>
-//</iq>
+                if (out.contains("<presence")) {
+                    String presense = out.substring(0, out.indexOf("</presence>") + 11);
+                    Object presence = unmarshaller().unmarshal(new StreamSource(new StringReader(presense)));
                 }
+
+                iqHandher(ch, out);
 
             }
 
@@ -328,6 +276,53 @@ public class NioServer implements Runnable {
             logger.error(e.getMessage(), e);
         }
 
+    }
+
+    private void iqHandher(SocketChannel ch, String out) throws Exception {
+        if (out.contains("<iq")) {
+
+            String iqstr = out.substring(out.indexOf("<iq"),
+                    out.length()).replaceAll("xmlns=\"jabber:client\"", "");
+
+            Iq iq = (Iq) unmarshaller()
+                    .unmarshal
+                            (new StreamSource(new StringReader(iqstr)));
+
+            if (iqstr.contains("<bind")) {
+
+                System.out.println(iq);
+                Bind b = (Bind) ((Iq) iq).getAny();
+                //  b.setResource(null);
+                b.setJid("test@localhost/" + b.getResource());
+                Iq i = new Iq();
+
+                i.setAny(b);
+                i.setType("result");
+                i.setId(((Iq) iq).getId());
+                StringWriter sw = new StringWriter();
+                marshaller().marshal(i, sw);
+                String res =
+                        sw.toString()
+                                .replaceAll(":ns0", "")
+                                .replaceAll("ns0:", "")
+                                .replaceAll(":ns3", "")
+                                .replaceAll(":ns2", "")
+                                .replaceAll(":ns1", "")
+                                .replaceAll("ns3:", "")
+                                .replaceAll("ns2:", "")
+                                .replaceAll("ns1:", "");
+                //System.out.println(res);
+                System.out.println(iqres);
+                ch.write(welcome(String.format(iqres, b.getResource())));
+            }
+            //  if(iqstr.contains("<session")){
+            else if (iq.getType().equals("set") && ((ElementNSImpl) iq.getAny()).getLocalName().equals("session")) {
+                ch.write(welcome("<iq type=\"result\" id=\"" + iq.getId() + "\"/>"));
+            } else if (iq.getType().equals("get") && ((ElementNSImpl) iq.getAny()).getLocalName().equals("query")) {
+                ch.write(welcome(String.format(rooster, iq.getId())));
+            }
+
+        }
     }
 
 }

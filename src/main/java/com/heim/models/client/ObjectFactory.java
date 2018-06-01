@@ -109,7 +109,7 @@ public class ObjectFactory {
         return new JAXBElement<String>(_Show_QNAME, String.class, null, value);
     }
 
-    @XmlElementDecl(namespace = "jabber:client", name = "session")
+    @XmlElementDecl(namespace = "urn:ietf:params:xml:ns:xmpp-session", name = "session")
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     public JAXBElement<String> createSession(String value) {
         return new JAXBElement<String>(_Session_QNAME, String.class, null, value);
