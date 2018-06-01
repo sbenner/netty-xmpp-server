@@ -32,6 +32,9 @@ import javax.xml.namespace.QName;
 @XmlRegistry
 public class ObjectFactory {
 
+
+    private final static QName _Session_QNAME = new QName("urn:ietf:params:xml:ns:xmpp-session", "session");
+
     private final static QName _Show_QNAME = new QName("jabber:client", "show");
     private final static QName _Priority_QNAME = new QName("jabber:client", "priority");
 
@@ -106,6 +109,11 @@ public class ObjectFactory {
         return new JAXBElement<String>(_Show_QNAME, String.class, null, value);
     }
 
+    @XmlElementDecl(namespace = "jabber:client", name = "session")
+    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
+    public JAXBElement<String> createSession(String value) {
+        return new JAXBElement<String>(_Session_QNAME, String.class, null, value);
+    }
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link Byte }{@code >}}
      */

@@ -5,10 +5,10 @@ import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.Iq;
 import com.heim.utils.Base64Utils;
+import com.sun.org.apache.xerces.internal.dom.ElementNSImpl;
 import org.eclipse.persistence.jaxb.JAXBContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -89,11 +89,11 @@ public class NioServer implements Runnable {
             "<session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>" +
             "</stream:features>";
     static String iqres =
-            "<iq type='result' id='bind_1'>" +
-                    "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>" +
-                    "<jid>test@localhost/frosty</jid>" +
-                    "</bind>" +
-                    "</iq>";
+            "<iq type=\"result\" id=\"bind_1\" to=\"localhost\">" +
+                    " <bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\">" +
+                    " <jid>camel_producer@localhost/Psi</jid>" +
+                    " </bind>" +
+                    " </iq>";
 
 
     public static void main(String[] args) throws IOException {
@@ -151,6 +151,29 @@ public class NioServer implements Runnable {
             "     xml:lang='en'" +
             "     xmlns='jabber:client'" +
             "     xmlns:stream='http://etherx.jabber.org/streams'>";
+
+
+    static String rooster = "<iq to='camel_producer@localhost/Psi' from='localhost' type='result' id='%s'>" +
+            "  <query xmlns='jabber:iq:roster'>" +
+            "    <item jid='123456789@icq.example.com'" +
+            "          name='Romeo'" +
+            "          subscription='both'>" +
+            "      <group>Friends</group>" +
+            "    </item>" +
+            "    <item jid='554323654@icq.example.com'" +
+            "          name='Mercutio'" +
+            "          subscription='from'>" +
+            "      <group>Friends</group>" +
+            "    </item>" +
+            "    <item jid='997665667@icq.example.com'" +
+            "          name='Benvolio'" +
+            "          subscription='both'>" +
+            "      <group>Friends</group>" +
+            "    </item>" +
+            "  </query>" +
+            "</iq>";
+    
+    
     Map<String, String> sessionsState = new ConcurrentHashMap<>();
 
 //    static String features = "<stream:features>" +
@@ -209,7 +232,7 @@ public class NioServer implements Runnable {
 
         try {
 
-            ByteBuffer body = ByteBuffer.allocate(512);
+            ByteBuffer body = ByteBuffer.allocate(8092);
 
             while ((read = ch.read(body)) > 0) {
              //   logger.info("read bytes : " + read);
@@ -220,43 +243,73 @@ public class NioServer implements Runnable {
                 String out =   new String(body.array()).trim();
                 System.out.println(out);
 
-                if (!StringUtils.isEmpty(addy)) {
-                    String val = sessionsState.get(addy);
-                    if (!StringUtils.isEmpty(val)) {
-                        ch.write(welcome(val));
-                        //     return;
-                    }
+//                if (!StringUtils.isEmpty(addy)) {
+//                    String val = sessionsState.get(addy);
+//
+//                    if (!StringUtils.isEmpty(val)) {
+//                        ch.write(welcome(val));
+//                        //     return;
+//                    }
+//                }
+
+                if (out.startsWith("<auth")) {
+                    Object auth = unmarshaller().unmarshal(new StreamSource(new StringReader(out)));
+                    System.out.println(auth);
+                    Base64Utils.decode(((Auth) auth).getValue());
+                    ch.write(welcome(success));
+                    ch.write(welcome(finish));
+                    sessionsState.put(makeAddress(ch), finish);
                 }
 
-                if (out.startsWith("<iq")) {
+                if (out.contains("<iq")) {
 
-                    Object iq = (Iq) unmarshaller()
+                    String iqstr = out.substring(out.indexOf("<iq"),
+                            out.length()).replaceAll("xmlns=\"jabber:client\"", "");
+
+                    Iq iq = (Iq) unmarshaller()
                             .unmarshal
-                                    (new StreamSource(new StringReader(out)));
-                    System.out.println(iq);
-                    Bind b = (Bind) ((Iq) iq).getAny();
-                    b.setResource(null);
-                    b.setJid("test@localhost/" + b.getResource());
-                    Iq i = new Iq();
+                                    (new StreamSource(new StringReader(iqstr)));
 
-                    i.setAny(b);
-                    i.setType("result");
-                    i.setId(((Iq) iq).getId());
-                    StringWriter sw = new StringWriter();
-                    marshaller().marshal(i, sw);
-                    String res =
-                            sw.toString()
-                                    .replaceAll(":ns0", "")
-                                    .replaceAll("ns0:", "")
-                                    .replaceAll(":ns3", "")
-                                    .replaceAll(":ns2", "")
-                                    .replaceAll(":ns1", "")
-                                    .replaceAll("ns3:", "")
-                                    .replaceAll("ns2:", "")
-                                    .replaceAll("ns1:", "");
-                    System.out.println(res);
-                    System.out.println(iqres);
-                    ch.write(welcome(iqres));
+                    if (iqstr.contains("<bind")) {
+
+                        System.out.println(iq);
+                        Bind b = (Bind) ((Iq) iq).getAny();
+                        b.setResource(null);
+                        b.setJid("test@localhost/" + b.getResource());
+                        Iq i = new Iq();
+
+                        i.setAny(b);
+                        i.setType("result");
+                        i.setId(((Iq) iq).getId());
+                        StringWriter sw = new StringWriter();
+                        marshaller().marshal(i, sw);
+                        String res =
+                                sw.toString()
+                                        .replaceAll(":ns0", "")
+                                        .replaceAll("ns0:", "")
+                                        .replaceAll(":ns3", "")
+                                        .replaceAll(":ns2", "")
+                                        .replaceAll(":ns1", "")
+                                        .replaceAll("ns3:", "")
+                                        .replaceAll("ns2:", "")
+                                        .replaceAll("ns1:", "");
+                        //System.out.println(res);
+                        System.out.println(iqres);
+                        ch.write(welcome(iqres));
+                    }
+                    //  if(iqstr.contains("<session")){
+                    else if (iq.getType().equals("set") && ((ElementNSImpl) iq.getAny()).getLocalName().equals("session")) {
+                        ch.write(welcome("<iq type=\"result\" id=\"" + iq.getId() + "\"/>"));
+                    } else if (iq.getType().equals("get") && ((ElementNSImpl) iq.getAny()).getLocalName().equals("query")) {
+                        ch.write(welcome(String.format(rooster, iq.getId())));
+                    }
+                    //}
+//                    if(iqstr.contains("query")&&iqstr.contains){
+//                        if(iq.getType().equals("set")){
+//                            ch.write(welcome("<iq type=\"result\" id=\""+iq.getId()+"\"/>"));
+//                        }
+//                    }
+                    // ch.write(welcome(success));
 //                    Object bind = (Bind) unmarshaller()
 //                            .unmarshal(new StreamSource(new StringReader(out)));
 //                    System.out.println(bind);
@@ -267,14 +320,6 @@ public class NioServer implements Runnable {
 //</iq>
                 }
 
-
-                if (out.startsWith("<auth")) {
-                    Object auth = unmarshaller().unmarshal(new StreamSource(new StringReader(out)));
-                    System.out.println(auth);
-                    Base64Utils.decode(((Auth) auth).getValue());
-                    ch.write(welcome(success));
-                    sessionsState.put(makeAddress(ch), finish);
-                }
             }
 
             // logger.info(messageMap);
