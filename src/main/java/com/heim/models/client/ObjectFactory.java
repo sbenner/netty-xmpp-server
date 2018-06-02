@@ -35,6 +35,10 @@ public class ObjectFactory {
 
     private final static QName _Session_QNAME = new QName("urn:ietf:params:xml:ns:xmpp-session", "session");
 
+    private final static QName _Stream_QNAME = new QName("http://etherx.jabber.org/streams", "stream");
+    private final static QName _Stream1_QNAME = new QName("urn:ietf:params:xml:ns:xmpp-streams", "stream");
+
+
     private final static QName _Show_QNAME = new QName("jabber:client", "show");
     private final static QName _Priority_QNAME = new QName("jabber:client", "priority");
 
@@ -52,10 +56,14 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Iq }
+     * Create an nstance of {@link Iq }
      */
     public Iq createIq() {
         return new Iq();
+    }
+
+    public Iqs createIqs() {
+        return new Iqs();
     }
 
     /**
@@ -110,10 +118,21 @@ public class ObjectFactory {
     }
 
     @XmlElementDecl(namespace = "urn:ietf:params:xml:ns:xmpp-session", name = "session")
-    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     public JAXBElement<String> createSession(String value) {
         return new JAXBElement<String>(_Session_QNAME, String.class, null, value);
     }
+
+    @XmlElementDecl(namespace = "http://etherx.jabber.org/streams", name = "stream")
+    public JAXBElement<String> createStream(String value) {
+        return new JAXBElement<String>(_Stream_QNAME, String.class, null, value);
+    }
+
+
+    @XmlElementDecl(namespace = "jabber:client", name = "stream")
+    public JAXBElement<String> createStreams(String value) {
+        return new JAXBElement<String>(_Stream1_QNAME, String.class, null, value);
+    }
+
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link Byte }{@code >}}
      */
