@@ -70,6 +70,9 @@
           <version>4.1.25.Final</version>
       </dependency>
 
+      <!-- https://mvnrepository.com/artifact/jivesoftware/smack -->
+
+
       <dependency>
           <groupId>org.apache.camel</groupId>
           <artifactId>camel-stream</artifactId>

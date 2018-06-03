@@ -2,6 +2,7 @@ package com.heim.netty;
 
 import com.heim.models.client.Iq;
 import com.heim.models.client.Iqs;
+import com.heim.service.XmppStreamReader;
 import com.sun.org.apache.xerces.internal.dom.ElementNSImpl;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -151,17 +152,23 @@ public class XmppMsgDecoder extends ByteToMessageDecoder {
 
         String str = new String(ba);
         System.out.println(str);
-        if (!str.contains("<stream") && !str.contains("<iq")) {
-            Object o = unmarshaller().unmarshal(new StreamSource(new StringReader(str)));
-            out.add(o);
-        } else {
-            if (str.contains("<iq")) {
-                Object val = iqHandher(str);
-                if (val != null)
-                    out.add(val);
-            } else {
-                out.add(str);
-            }
-        }
+
+        out.add(XmppStreamReader.read(str));
+//        if (!str.contains("<stream") && !str.contains("<iq")) {
+//            Object o = unmarshaller().unmarshal(new StreamSource(new StringReader(str)));
+//            out.add(o);
+//        } else {
+//            if (str.contains("<iq")) {
+//                Object val = iqHandher(str);
+//                if (val != null)
+//                    out.add(val);
+//            } else {
+//                if(str.contains("<stream")) {
+//                    str = str.substring(0,str.length()-2)+"/>";
+//                    Object o = unmarshaller().unmarshal(new StreamSource(new StringReader(str)));
+//                    out.add(o);
+//                }
+//            }
+//        }
     }
 }

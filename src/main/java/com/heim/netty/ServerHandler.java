@@ -3,6 +3,7 @@ package com.heim.netty;
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.Iq;
+import com.heim.models.client.Stream;
 import com.heim.utils.Base64Utils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
@@ -44,10 +45,11 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     "<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>" +
                     "<session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>" +
                     "</stream:features>";
+
     public static String iqres =
             "<iq type=\"result\" id=\"bind_1\" to=\"localhost\">" +
                     " <bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\">" +
-                    " <jid>camel_producer@localhost/%s</jid>" +
+                    " <jid>test@localhost/%s</jid>" +
                     " </bind>" +
                     " </iq>";
     static String res1 = "<stream:stream" +
@@ -104,7 +106,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
         Boolean auth = client.get(ctx.channel().id());
 
-        if (msg.toString().contains("<stream") && !msg.toString().contains("<iq")) {
+        //if (msg.toString().contains("<stream") && !msg.toString().contains("<iq")) {
+        if (msg instanceof Stream) {
             if (auth == null || !auth)
                 ctx.writeAndFlush(text + features);
         }

@@ -2,7 +2,7 @@ package com.heim.config;
 
 //import com.heim.service.XmlHandler;
 
-import com.heim.service.SharedConnectionXmppEndpoint;
+
 import com.heim.service.XmppMessageHandler;
 import org.apache.camel.component.xmpp.XmppComponent;
 import org.apache.camel.spring.SpringRouteBuilder;
@@ -45,14 +45,14 @@ public class NettyConfigurator extends SpringRouteBuilder {
 //                                XmppEndpoint.class);
         XmppComponent xmppComponent = getContext().getComponent("xmpp", XmppComponent.class);
 
-        SharedConnectionXmppEndpoint
-                endpoint2 = new SharedConnectionXmppEndpoint(
-                "xmpp://sergey@localhost:5222/test?password=secret",
-                xmppComponent);
-
-        from(endpoint2).
-                setBody(constant("I will win!\n Your Superman.")).
-                to(endpoint2);
+//        SharedConnectionXmppEndpoint
+//                endpoint2 = new SharedConnectionXmppEndpoint(
+//                "xmpp://sergey@localhost:5222/test?password=secret",
+//                xmppComponent);
+//
+//        from(endpoint2).
+//                setBody(constant("I will win!\n Your Superman.")).
+//                to(endpoint2);
 
 
     }

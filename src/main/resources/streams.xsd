@@ -13,10 +13,10 @@
              schemaLocation='jabber-server.xsd'/>
   <xs:import namespace='urn:ietf:params:xml:ns:xmpp-sasl'
              schemaLocation='sasl.xsd'/>
-  <xs:import namespace='urn:ietf:params:xml:ns:xmpp-streams'
-             schemaLocation='streamerror.xsd'/>
   <xs:import namespace='urn:ietf:params:xml:ns:xmpp-tls'
              schemaLocation='tls.xsd'/>
+  <xs:import namespace='urn:ietf:params:xml:ns:xmpp-streams'
+             schemaLocation='streamerror.xsd'/>
   <xs:import namespace='http://www.w3.org/XML/1998/namespace'
              schemaLocation='http://www.w3.org/2001/03/xml.xsd'/>
 
@@ -26,13 +26,13 @@
                    xmlns:server='jabber:server'>
         <xs:element ref='features'
                     minOccurs='0'
-                    maxOccurs='1'/>
+        />
         <xs:any namespace='urn:ietf:params:xml:ns:xmpp-tls'
                 minOccurs='0'
-                maxOccurs='1'/>
+        />
         <xs:any namespace='urn:ietf:params:xml:ns:xmpp-sasl'
                 minOccurs='0'
-                maxOccurs='1'/>
+        />
         <xs:any namespace='##other'
                 minOccurs='0'
                 maxOccurs='unbounded'
@@ -49,7 +49,7 @@
             <xs:element ref='server:iq'/>
           </xs:choice>
         </xs:choice>
-        <xs:element ref='error' minOccurs='0' maxOccurs='1'/>
+        <!--<xs:element ref='error' minOccurs='0' maxOccurs='1'/>-->
       </xs:sequence>
       <xs:attribute name='from' type='xs:string' use='optional'/>
       <xs:attribute name='id' type='xs:string' use='optional'/>
@@ -71,19 +71,19 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:element name='error'>
-    <xs:complexType>
-      <xs:sequence xmlns:err='urn:ietf:params:xml:ns:xmpp-streams'>
-        <xs:group ref='err:streamErrorGroup'/>
-        <xs:element ref='err:text'
-                    minOccurs='0'
-                    maxOccurs='1'/>
-        <xs:any namespace='##other'
-                minOccurs='0'
-                maxOccurs='1'
-                processContents='lax'/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
+  <!--<xs:element name='error'>-->
+  <!--<xs:complexType>-->
+  <!--<xs:sequence xmlns:err='urn:ietf:params:xml:ns:xmpp-streams'>-->
+  <!--<xs:group ref='err:streamErrorGroup'/>-->
+  <!--<xs:element ref='err:text'-->
+  <!--minOccurs='0'-->
+  <!--maxOccurs='1'/>-->
+  <!--<xs:any namespace='##other'-->
+  <!--minOccurs='0'-->
+  <!--maxOccurs='1'-->
+  <!--processContents='lax'/>-->
+  <!--</xs:sequence>-->
+  <!--</xs:complexType>-->
+  <!--</xs:element>-->
 
 </xs:schema>
