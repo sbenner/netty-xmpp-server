@@ -2,9 +2,8 @@ package com.heim.netty;
 
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
-import com.heim.models.client.Iq;
-import com.heim.models.client.Query;
-import com.heim.models.client.Stream;
+import com.heim.models.client.*;
+import com.heim.models.client.Thread;
 import org.jivesoftware.smack.packet.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,9 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Created with IntelliJ IDEA.
@@ -28,8 +30,9 @@ public class XmppStreamReader {
     private static final Logger logger = LoggerFactory.getLogger(XmppStreamReader.class);
 
 
-    static Object read(String xmlstring) {
+    static List<Object> read(String xmlstring) {
 
+        List<Object> objects = new ArrayList<>();
 
         if ((xmlstring.startsWith("<?xml") || xmlstring.startsWith("<stream:stream"))
                 && !xmlstring.contains("</stream:stream>")) {
@@ -61,65 +64,127 @@ public class XmppStreamReader {
                         System.out.println("localname: " + reader.getLocalName());
                         switch (reader.getLocalName()) {
                             case "stream":
-                                obj = new Stream();
+                                Stream s = new Stream();
+                                objects.add(s);
                                 System.out.println("we found CDR!!!");
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
                                     String val = reader.getAttributeValue(i);
                                     switch (name) {
                                         case "to":
-                                            ((Stream) obj).setTo(val);
+                                            s.setTo(val);
                                             break;
                                         case "version":
-                                            ((Stream) obj).setVersion(val);
+                                            s.setVersion(val);
                                             break;
                                         case "lang":
-                                            ((Stream) obj).setLang(val);
+                                            s.setLang(val);
                                             break;
                                     }
                                 }
                                 break;
                             case "auth":
-                                obj = new Auth();
+                                Auth a = new Auth();
+
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
                                     String val = reader.getAttributeValue(i);
                                     switch (name) {
                                         case "mechanism":
-                                            ((Auth) obj).setMechanism(val);
+                                            a.setMechanism(val);
+                                            break;
+                                    }
+                                }
+                                objects.add(a);
+                                break;
+                            case "session":
+                                Optional optionalIq =
+                                        objects.stream().filter(
+                                                i -> i instanceof Iq
+                                        ).findFirst();
+                                if (optionalIq.isPresent() && ((Iq) optionalIq.get()).getType().equals("set")) {
+                                    ((Iq) optionalIq.get()).setAny(new Session());
+                                }
+                                break;
+                            case "message":
+                                Message msg = new Message();
+                                objects.add(msg);
+                                for (int i = 0; i < reader.getAttributeCount(); i++) {
+                                    String name = reader.getAttributeLocalName(i);
+                                    String val = reader.getAttributeValue(i);
+                                    switch (name) {
+                                        case "to":
+                                            ((Message) obj).setTo(val);
+                                            break;
+                                        case "id":
+                                            ((Message) obj).setId(val);
+                                            break;
+                                        case "from":
+                                            ((Message) obj).setFrom(val);
+                                            break;
+                                        case "type":
+                                            ((Message) obj).setType(val);
                                             break;
                                     }
                                 }
                                 break;
-                            case "session":
-                                if (obj instanceof Iq) {
-                                    any = new Session();
+                            case "subject":
 
-                                    ((Iq) obj).setAny(any);
+                                optionalIq =
+                                        objects.stream().filter(
+                                                i -> i instanceof Message
+                                        ).findFirst();
+                                if (optionalIq.isPresent()) {
+                                    ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Subject());
+                                }
+
+                                break;
+                            case "body":
+                                optionalIq =
+                                        objects.stream().filter(
+                                                i -> i instanceof Message
+                                        ).findFirst();
+                                if (optionalIq.isPresent()) {
+                                    ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Body());
+                                }
+                                break;
+                            case "thread":
+
+                                optionalIq =
+                                        objects.stream().filter(
+                                                i -> i instanceof Message
+                                        ).findFirst();
+                                if (optionalIq.isPresent()) {
+                                    ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Thread());
                                 }
                                 break;
                             case "iq":
-                                obj = new Iq();
+                                Iq iq = new Iq();
+                                objects.add(iq);
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
                                     String val = reader.getAttributeValue(i);
                                     switch (name) {
                                         case "type":
-                                            ((Iq) obj).setType(val);
+                                            iq.setType(val);
                                             break;
                                         case "to":
-                                            ((Iq) obj).setTo(val);
+                                            iq.setTo(val);
                                             break;
                                         case "id":
-                                            ((Iq) obj).setId(val);
+                                            iq.setId(val);
                                             break;
                                     }
                                 }
                                 break;
                             case "bind":
-                                if (obj instanceof Iq) {
+                                optionalIq =
+                                        objects.stream().filter(
+                                                i -> i instanceof Iq
+                                        ).findFirst();
+                                if (optionalIq.isPresent()) {
                                     any = new Bind();
-                                    ((Iq) obj).setAny(any);
+                                    ((Iq) optionalIq.get()).setAny(any);
                                 }
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
@@ -131,29 +196,27 @@ public class XmppStreamReader {
                                             break;
                                     }
                                 }
+                                if (objects.get(0) instanceof Stream) {
+                                    objects.remove(0);
+                                }
+
                                 break;
                             case "query":
-                                if (obj instanceof Iq) {
-                                    any = new Query();
-                                    ((Iq) obj).setAny(any);
+                                optionalIq =
+                                        objects.stream().filter(
+                                                i -> i instanceof Iq
+                                        ).findFirst();
+                                if (optionalIq.isPresent()) {
+                                    Query q = new Query();
+                                    q.setNamespace(reader.getNamespaceURI());
+                                    ((Iq) optionalIq.get()).setAny(q);
                                 }
-                                ((Query) any).setNamespace(reader.getNamespaceURI());
-//                                for (int i = 0; i < reader.getAttributeCount(); i++) {
-//                                    String name = reader.getAttributeLocalName(i);
-//                                    String val = reader.getAttributeValue(i);
-//                                    switch (name) {
-//                                        case "xmlns":
-//                                            if(any instanceof Query)
-//                                             ((Query)any).setNamespace(val);
-//                                            break;
-//                                    }
-//                                }
+
 
                                 break;
 
                         }
                         break;
-
                     case XMLStreamConstants.CHARACTERS:
                         tagContent = reader.getText().trim();
                         break;
@@ -161,52 +224,72 @@ public class XmppStreamReader {
                     case XMLStreamConstants.END_ELEMENT:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         System.out.println("END ELEMENT " + reader.getLocalName());
-                        if (obj != null) {
+                        if (objects.size() > 0) {
                             switch (reader.getLocalName()) {
                                 case "stream":
                                     break;
                                 case "resource":
-                                    if (any instanceof Bind && tagContent != null) {
-                                        ((Bind) any).setResource(tagContent);
+                                    Optional
+                                            optionalIq =
+                                            objects.stream().filter(
+                                                    i -> i instanceof Iq
+                                            ).filter(i -> ((Iq) i).getAny() instanceof Bind).findFirst();
+                                    if (optionalIq.isPresent() && tagContent != null) {
+                                        ((Bind) ((Iq) optionalIq.get()).getAny()).setResource(tagContent);
                                     }
                                     break;
                                 case "iq":
                                     System.out.println(reader.getLocalName());
                                     break;
                                 case "auth":
-                                    if (tagContent != null) {
-                                        if (obj instanceof Auth)
-                                            ((Auth) obj).setValue(tagContent);
+                                    System.out.println(tagContent);
+                                    optionalIq =
+                                            objects.stream().filter(
+                                                    i -> i instanceof Auth
+                                            ).findFirst();
+                                    if (optionalIq.isPresent() && tagContent != null) {
+                                        ((Auth) optionalIq.get()).setValue(tagContent);
+                                    }
+
+                                    break;
+                                case "subject":
+                                    final String subj = tagContent;
+                                    optionalIq =
+                                            objects.stream().filter(
+                                                    i -> i instanceof Message
+                                            ).findFirst();
+                                    if (optionalIq.isPresent() && tagContent != null) {
+                                        ((Message) optionalIq.get()).getSubjectOrBodyOrThread()
+                                                .stream().filter(i -> i instanceof Subject).forEach(
+                                                i -> ((Subject) i).setValue(subj)
+                                        );
                                     }
                                     break;
-//                                case "query":
-//                                    if (obj instanceof Iq) {
-//                                        any = new Query();
-//                                        ((Iq) obj).setAny(any);
-//                                    }
-//                                    for (int i = 0; i < reader.getAttributeCount(); i++) {
-//                                        String name = reader.getAttributeLocalName(i);
-//                                        String val = reader.getAttributeValue(i);
-//                                        switch (name) {
-//                                            case "xmlns":
-//                                                if(any instanceof Query)
-//                                                    ((Query)any).setNamespace(val);
-//                                                break;
-//                                        }
-//                                    }
-//                                    break;
+                                case "body":
+                                    final String body = tagContent;
+                                    optionalIq =
+                                            objects.stream().filter(
+                                                    i -> i instanceof Message
+                                            ).findFirst();
+                                    if (optionalIq.isPresent()) {
+                                        ((Message) optionalIq.get()).getSubjectOrBodyOrThread()
+                                                .stream().filter(i -> i instanceof Body).forEach(
+                                                i -> ((Body) i).setValue(body)
+                                        );
+                                    }
+                                    break;
+                                case "thread":
+
+                                    break;
+
 
                             }
                         }
                         break;
 
                     case XMLStreamConstants.START_DOCUMENT:
-                        String r = reader.getLocalName();
-                        //   relatedCDRMap = new HashMap<>();
                         break;
                     case XMLStreamConstants.ATTRIBUTE:
-
-
                         break;
                 }
 
@@ -214,7 +297,7 @@ public class XmppStreamReader {
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
-        return obj;
+        return objects;
     }
 }
 

@@ -2,21 +2,14 @@ package com.heim.netty;
 
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
-import com.heim.models.client.Iq;
-import com.heim.models.client.Query;
-import com.heim.models.client.Stream;
+import com.heim.models.client.*;
 import com.heim.utils.Base64Utils;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.jivesoftware.smack.packet.Session;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerHandler extends ChannelInboundHandlerAdapter {
@@ -59,21 +52,28 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             "id='s2s_123'" +
             "version='1.0'>";
     //jid,fromServer,id
-    static String roster = "<iq to='%1$s'" +
+    static String rosterTest = "<iq to='%1$s'" +
             " from='%2$s' type='result' id='%3$s'>" +
             "  <query xmlns='jabber:iq:roster'>" +
-            "    <item jid='123456789@icq.example.com'" +
-            "          name='Romeo'" +
+            "    <item jid='serg@192.168.1.13'" +
+            "          name='Sergey'" +
             "          subscription='both'>" +
             "      <group>Friends</group>" +
             "    </item>" +
-            "    <item jid='554323654@icq.example.com'" +
-            "          name='Mercutio'" +
-            "          subscription='from'>" +
-            "      <group>Friends</group>" +
-            "    </item>" +
-            "    <item jid='997665667@icq.example.com'" +
-            "          name='Benvolio'" +
+            "  </query>" +
+            "</iq>";
+    static String message
+            = "<message xmlns=\"jabber:client\" to=\"%1$s\" id=\"%2$s\">\n" +
+            "<subject>%3$s</subject>\n" +
+            "<body>%4$s</body>\n" +
+            "</message>";
+
+
+    static String rosterSergey = "<iq to='%1$s'" +
+            " from='%2$s' type='result' id='%3$s'>" +
+            "  <query xmlns='jabber:iq:roster'>" +
+            "    <item jid='test@localhost'" +
+            "          name='Tester'" +
             "          subscription='both'>" +
             "      <group>Friends</group>" +
             "    </item>" +
@@ -81,6 +81,32 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             "</iq>";
     static Map<ChannelId, SessionContext>
             sessionContextMap = new ConcurrentHashMap<>();
+
+    static Map<String, ChannelId>
+            authorizedUserChannels = new ConcurrentHashMap<>();
+
+    static Map<String, String> userRoster = new HashMap<>();
+
+    static {
+        userRoster.put("serg", rosterSergey);
+        userRoster.put("test", rosterTest);
+    }
+
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+        ChannelFuture closeFuture = ctx.channel().closeFuture();
+
+        closeFuture.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                sessionContextMap.remove(ctx.channel().id());
+            }
+        });
+
+
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -90,6 +116,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        List<Object> objects = new ArrayList<>();
         System.out.println("INPUT CHANNEL READ: " + msg.toString());
         String xmlstring = msg.toString();
         if (!xmlstring.startsWith("<?xml") &&
@@ -99,6 +126,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 && !xmlstring.endsWith("</iq>")
                 && !xmlstring.endsWith("</presence>")
                 && !xmlstring.endsWith("</priority>")
+                && !xmlstring.endsWith("</message>")
                 && !xmlstring.endsWith("</auth>")) {
             val.add(xmlstring);
         } else if (val.size() > 0) {
@@ -106,64 +134,99 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             val.clear();
         }
         if (val.size() == 0) {
-            msg = XmppStreamReader.read(xmlstring);
+            objects = XmppStreamReader.read(xmlstring);
         }
 
         SessionContext sessionContext = sessionContextMap.get(ctx.channel().id());
 
-        if (msg instanceof Stream) {
-            if (sessionContext == null || !sessionContext.isAuthorized()) {
-                ctx.writeAndFlush(String.format(text, ((Stream) msg).getTo())
-                        + features);
-                SessionContext context = new SessionContext();
-                context.setCtx(ctx);
-                context.setTo(((Stream) msg).getTo());
-                sessionContextMap.put(ctx.channel().id(), context);
-            } else {
-                ctx.writeAndFlush(String.format(authOk, sessionContext.getTo()));
+        for (Object obj : objects) {
+            if (obj instanceof Stream) {
+                if (sessionContext == null || !sessionContext.isAuthorized()) {
+                    ctx.writeAndFlush(String.format(text, ((Stream) obj).getTo())
+                            + features);
+                    SessionContext context = new SessionContext();
+                    context.setCtx(ctx);
+                    context.setTo(((Stream) obj).getTo());
+                    sessionContextMap.put(ctx.channel().id(), context);
+                } else if (sessionContext.isAuthorized()) {
+                    ctx.writeAndFlush(String.format(authOk, sessionContext.getTo()));
+                    return;
+                }
             }
-        }
-        if (msg instanceof Auth) {
+            if (obj instanceof Auth) {
 
-            String user = Base64Utils.decode(((Auth) msg).getValue());
-            if (user != null) {
-                sessionContext.setAuthorized(true);
-                sessionContext.setUser(user);
-                ctx.writeAndFlush(success + String.format(authOk, sessionContext.getTo()));
+                String user = Base64Utils.decode(((Auth) obj).getValue());
+                if (user != null) {
+                    sessionContext.setAuthorized(true);
+                    sessionContext.setUser(user);
+                    sessionContext.setCtx(ctx);
+                    authorizedUserChannels.put(sessionContext.getUser() + "@" + sessionContext.getTo(),
+                            sessionContext.getCtx().channel().id());
+                    ctx.writeAndFlush(success + String.format(authOk, sessionContext.getTo()));
+                    return;
+                }
+                //client.put(ctx.channel().id(), true);
 
-            }
-            //client.put(ctx.channel().id(), true);
 
-
-        }
-
-
-        if (msg instanceof Iq) {
-            if (((Iq) msg).getAny() == null) {
-                return;
-            }
-            switch (((Iq) msg).getAny().getClass().getName().toLowerCase()) {
-                case "bind":
-                    break;
-                case "session":
-                    break;
-                case "query":
-                    break;
             }
 
+            if (obj instanceof Message) {
 
-            Iq res = (Iq) msg;
-            if (((Iq) msg).getAny() instanceof Bind &&
-                    ((Iq) msg).getType().equals("set")) {
-                res.setType("result");
-                Bind b = (Bind) res.getAny();
-                String user = sessionContext.getUser() + "@" + sessionContext.getTo();
-                String jid = user + "/" + b.getResource();
-                // b.setJid();
+                ChannelId channelId = authorizedUserChannels.get(((Message) obj).getTo());
+                if (channelId != null) {
+                    SessionContext userSessionContext =
+                            sessionContextMap.get(channelId);
 
-                sessionContext.setJid(jid);
+                    Optional body =
+                            ((Message) obj).getSubjectOrBodyOrThread()
+                                    .stream().
+                                    filter(i -> i instanceof Body).findFirst();
+                    Optional subj =
+                            ((Message) obj).getSubjectOrBodyOrThread()
+                                    .stream().
+                                    filter(i -> i instanceof Subject).findFirst();
 
-                //StringWriter sw = new StringWriter();
+                    if (subj.isPresent() || body.isPresent()) {
+                        String newMessage = String.format(message, ((Message) obj).getTo()
+                                , ((Message) obj).getId(),
+                                subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
+                                body.isPresent() ? ((Body) body.get()).getValue() : "");
+
+                        userSessionContext.getCtx().writeAndFlush(newMessage);
+                        return;
+                    }
+                }
+                //client.put(ctx.channel().id(), true);
+
+
+            }
+
+            if (obj instanceof Iq) {
+                if (((Iq) obj).getAny() == null) {
+                    return;
+                }
+                switch (((Iq) obj).getAny().getClass().getName().toLowerCase()) {
+                    case "bind":
+                        break;
+                    case "session":
+                        break;
+                    case "query":
+                        break;
+                }
+
+
+                Iq res = (Iq) obj;
+                if (((Iq) obj).getAny() instanceof Bind &&
+                        ((Iq) obj).getType().equals("set")) {
+                    res.setType("result");
+                    Bind b = (Bind) res.getAny();
+                    String user = sessionContext.getUser() + "@" + sessionContext.getTo();
+                    String jid = user + "/" + b.getResource();
+                    // b.setJid();
+
+                    sessionContext.setJid(jid);
+
+                    //StringWriter sw = new StringWriter();
 //                marshaller().marshal(res, sw);
 //                String r =
 //                        sw.toString()
@@ -176,25 +239,33 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 //                                .replaceAll("ns2:", "")
 //                                .replaceAll("ns1:", "");
 
-                //  System.out.println(r);
-                ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
-            }
-            if (((Iq) msg).getAny() instanceof Session) {
-                if (((Iq) msg).getType().equals("set")) {
-                    ctx.writeAndFlush("<iq type=\"result\" id=\"" + ((Iq) msg).getId() + "\"/>");
+                    //  System.out.println(r);
+                    ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
+                    return;
                 }
-            }
-            if (((Iq) msg).getAny() instanceof Query) {
-                Query q = (Query) ((Iq) msg).getAny();
-                if (((Iq) msg).getType().equals("get") &&
-                        q.getNamespace().endsWith(":roster"))
-                    ctx.writeAndFlush(String.format(roster,
-                            sessionContext.getJid(), sessionContext.getTo(), ((Iq) msg).getId()));
-            }
+                if (((Iq) obj).getAny() instanceof Session) {
+                    if (((Iq) obj).getType().equals("set")) {
+                        ctx.writeAndFlush("<iq type=\"result\" id=\"" + ((Iq) obj).getId() + "\"/>");
+                        return;
+                    }
+                }
+                if (((Iq) obj).getAny() instanceof Query) {
+                    Query q = (Query) ((Iq) obj).getAny();
+                    if (((Iq) obj).getType().equals("get") &&
+                            q.getNamespace().endsWith(":roster")) {
+                        ctx.writeAndFlush(String.format(userRoster.get(sessionContext.getUser()),
+                                sessionContext.getJid(),
+                                sessionContext.getTo(),
+                                ((Iq) obj).getId()));
+                        return;
+                    }
+                }
 
+            }
         }
 
     }
+
 
     // Here is how we send out heart beat for idle to long
     @Override
@@ -203,8 +274,11 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state() == IdleState.ALL_IDLE) { // idle for no read and write
                 //  ctx.writeAndFlush(new LoopBackTimeStamp());
+                ctx.channel().close();
             }
+
         }
+
     }
 
     @Override

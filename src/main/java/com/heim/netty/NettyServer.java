@@ -7,6 +7,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
@@ -31,6 +32,7 @@ public class NettyServer {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
+                pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
                 //  pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 5)); // add with name
                 pipeline.addLast(new XmppMsgEncoder()); // add without name, name auto generated
                 pipeline.addLast(new XmppMsgDecoder()); // add without name, name auto generated
