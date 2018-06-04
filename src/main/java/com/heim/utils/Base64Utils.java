@@ -17,8 +17,10 @@ public class Base64Utils {
         if (decoded.length > 2) {
             sb.append(decoded[1]).append(":").append(decoded[2]);
             String res = sb.toString();
+
+            //validate user/password if validated return user
             System.out.println(res);
-            return res;
+            return decoded[1];
         }
         return null;
 
