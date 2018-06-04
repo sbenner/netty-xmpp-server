@@ -46,9 +46,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     "</stream:features>";
 
     public static String bindOk =
-            "<iq type=\"result\" id=\"bind_1\" to=\"%1$s\">" +
+            "<iq type=\"result\" id=\"%1$s\" to=\"%2$s\">" +
                     " <bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\">" +
-                    " <jid>%2$s</jid>" +
+                    " <jid>%3$s</jid>" +
                     " </bind>" +
                     " </iq>";
     static String success = "<success xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>";
@@ -139,7 +139,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
 
         if (msg instanceof Iq) {
-
+            if (((Iq) msg).getAny() == null) {
+                return;
+            }
             switch (((Iq) msg).getAny().getClass().getName().toLowerCase()) {
                 case "bind":
                     break;
@@ -175,7 +177,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 //                                .replaceAll("ns1:", "");
 
                 //  System.out.println(r);
-                ctx.writeAndFlush(String.format(bindOk, user, jid));
+                ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
             }
             if (((Iq) msg).getAny() instanceof Session) {
                 if (((Iq) msg).getType().equals("set")) {
