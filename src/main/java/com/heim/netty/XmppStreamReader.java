@@ -63,7 +63,8 @@ public class XmppStreamReader {
 
         List<Object> objects = new ArrayList<>();
 
-        if ((xmlstring.startsWith("<?xml") || xmlstring.contains("<stream:stream"))
+        if (xmlstring.startsWith("<?xml") ||
+                (xmlstring.contains("<stream:stream") && xmlstring.endsWith("'en'>"))
                 && !xmlstring.contains("</stream:stream>")) {
             xmlstring += "</stream:stream>";
         } else if (xmlstring.contains("</stream:stream>")

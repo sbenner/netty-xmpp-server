@@ -122,6 +122,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         List<Object> objects = new ArrayList<>();
         System.out.println("INPUT CHANNEL READ: " + msg.toString());
         String xmlstring = msg.toString().trim();
+        if (xmlstring.equals("</stream:stream>")) return;
 
         buffer.append(xmlstring);
         if (XmppStreamReader.validate(buffer.toString())) {
