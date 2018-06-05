@@ -39,9 +39,12 @@ public class XmppStreamReader {
             } else if (xmlstring.contains("</stream:stream>")
                     && !xmlstring.contains("<stream:stream")) {
                 xmlstring = "<stream:stream>" + xmlstring;
-            } else {
-                xmlstring = "<xmpp>" + xmlstring + "</xmpp>";
             }
+//            else {
+////
+////            }
+            if (!xmlstring.startsWith("<?xml"))
+                xmlstring = "<xmpp>" + xmlstring + "</xmpp>";
 
             XMLInputFactory factory = XMLInputFactory.newInstance();
             XMLStreamReader reader =

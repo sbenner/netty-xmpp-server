@@ -57,7 +57,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     static String rosterTest = "<iq to='%1$s'" +
             " from='%2$s' type='result' id='%3$s'>" +
             "  <query xmlns='jabber:iq:roster'>" +
-            "    <item jid='serg@10.255.0.67'" +
+            "    <item jid='serg@%2$s'" +
             "          name='Sergey'" +
             "          subscription='both'>" +
             "      <group>Friends</group>" +
@@ -271,10 +271,12 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     Query q = (Query) ((Iq) obj).getAny();
                     if (((Iq) obj).getType().equals("get") &&
                             q.getNamespace().endsWith(":roster")) {
-                        ctx.writeAndFlush(String.format(userRoster.get(sessionContext.getUser()),
+                        ctx.writeAndFlush(String.format(
+                                userRoster.get(sessionContext.getUser()),
                                 sessionContext.getJid(),
                                 sessionContext.getTo(),
-                                ((Iq) obj).getId()));
+                                ((Iq) obj).getId(),
+                                sessionContext.getTo()));
                         return;
                     }
                 }
