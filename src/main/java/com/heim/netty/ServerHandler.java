@@ -15,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
 
-    final static List<String> val = Collections.synchronizedList(new ArrayList());
+    //final static List<String> val = Collections.synchronizedList(new ArrayList());
+
+    final static StringBuffer buffer = new StringBuffer();
 
     public static String features = "<stream:features>" +
             "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
@@ -55,7 +57,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     static String rosterTest = "<iq to='%1$s'" +
             " from='%2$s' type='result' id='%3$s'>" +
             "  <query xmlns='jabber:iq:roster'>" +
-            "    <item jid='serg@192.168.1.13'" +
+            "    <item jid='serg@10.255.0.67'" +
             "          name='Sergey'" +
             "          subscription='both'>" +
             "      <group>Friends</group>" +
@@ -63,9 +65,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             "  </query>" +
             "</iq>";
     static String message
-            = "<message xmlns=\"jabber:client\" to=\"%1$s\" id=\"%2$s\">\n" +
-            "<subject>%3$s</subject>\n" +
-            "<body>%4$s</body>\n" +
+            = "<message xmlns=\"jabber:client\" from=\"%1$s\" type=\"chat\" to=\"%2$s\" id=\"%3$s\">\n" +
+            "<subject>%4$s</subject>\n" +
+            "<body>%5$s</body>\n" +
             "</message>";
 
 
@@ -116,26 +118,38 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+
         List<Object> objects = new ArrayList<>();
         System.out.println("INPUT CHANNEL READ: " + msg.toString());
-        String xmlstring = msg.toString();
-        if (!xmlstring.startsWith("<?xml") &&
-                !xmlstring.endsWith("</stream:stream>") &&
-                !xmlstring.startsWith("<stream:stream")
-                && !xmlstring.endsWith("/>")
-                && !xmlstring.endsWith("</iq>")
-                && !xmlstring.endsWith("</presence>")
-                && !xmlstring.endsWith("</priority>")
-                && !xmlstring.endsWith("</message>")
-                && !xmlstring.endsWith("</auth>")) {
-            val.add(xmlstring);
-        } else if (val.size() > 0) {
-            xmlstring = val.get(val.size() - 1) + xmlstring;
-            val.clear();
+        String xmlstring = msg.toString().trim();
+
+        buffer.append(xmlstring);
+        if (XmppStreamReader.validate(buffer.toString())) {
+            objects = XmppStreamReader.read(buffer.toString());
+            buffer.setLength(0);
+        } else {
+            return;
         }
-        if (val.size() == 0) {
-            objects = XmppStreamReader.read(xmlstring);
-        }
+//        if (!xmlstring.startsWith("<?xml") &&
+//                !xmlstring.endsWith("</stream:stream>") &&
+//                !xmlstring.startsWith("<stream:stream")
+//                && !xmlstring.endsWith("/>")
+//                && !xmlstring.endsWith("</iq>")
+//                && !xmlstring.endsWith("</presence>")
+//                && !xmlstring.endsWith("</priority>")
+//                && !xmlstring.endsWith("</message>")
+//                && !xmlstring.endsWith("</auth>")) {
+//            val.add(xmlstring);
+//        } else if (val.size() > 0) {
+//            xmlstring = val.get(val.size() - 1) + xmlstring;
+//            if(!xmlstring.endsWith(">")){return;}
+//            else{
+//                val.clear();
+//            }
+//        }
+//        if (val.size() == 0) {
+//
+//        }
 
         SessionContext sessionContext = sessionContextMap.get(ctx.channel().id());
 
@@ -177,6 +191,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     SessionContext userSessionContext =
                             sessionContextMap.get(channelId);
 
+
                     Optional body =
                             ((Message) obj).getSubjectOrBodyOrThread()
                                     .stream().
@@ -187,7 +202,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                     filter(i -> i instanceof Subject).findFirst();
 
                     if (subj.isPresent() || body.isPresent()) {
-                        String newMessage = String.format(message, ((Message) obj).getTo()
+                        String newMessage = String.format(message,
+                                sessionContext.getUser() + "@" + sessionContext.getTo()
+                                , ((Message) obj).getTo()
                                 , ((Message) obj).getId(),
                                 subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
                                 body.isPresent() ? ((Body) body.get()).getValue() : "");

@@ -30,11 +30,40 @@ public class XmppStreamReader {
     private static final Logger logger = LoggerFactory.getLogger(XmppStreamReader.class);
 
 
+    static boolean validate(String xmlstring) {
+        boolean isValid = false;
+        try {
+            if ((xmlstring.startsWith("<?xml") || xmlstring.contains("<stream:stream"))
+                    && !xmlstring.contains("</stream:stream>")) {
+                xmlstring += "</stream:stream>";
+            } else if (xmlstring.contains("</stream:stream>")
+                    && !xmlstring.contains("<stream:stream")) {
+                xmlstring = "<stream:stream>" + xmlstring;
+            } else {
+                xmlstring = "<xmpp>" + xmlstring + "</xmpp>";
+            }
+
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+            XMLStreamReader reader =
+                    factory.createXMLStreamReader(
+                            new ByteArrayInputStream(xmlstring.getBytes()));
+
+            System.out.println("VALIDATING " + xmlstring);
+            while (reader.hasNext()) {
+                reader.next();
+            }
+            isValid = true;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return isValid;
+    }
+
     static List<Object> read(String xmlstring) {
 
         List<Object> objects = new ArrayList<>();
 
-        if ((xmlstring.startsWith("<?xml") || xmlstring.startsWith("<stream:stream"))
+        if ((xmlstring.startsWith("<?xml") || xmlstring.contains("<stream:stream"))
                 && !xmlstring.contains("</stream:stream>")) {
             xmlstring += "</stream:stream>";
         } else if (xmlstring.contains("</stream:stream>")
@@ -114,16 +143,16 @@ public class XmppStreamReader {
                                     String val = reader.getAttributeValue(i);
                                     switch (name) {
                                         case "to":
-                                            ((Message) obj).setTo(val);
+                                            msg.setTo(val);
                                             break;
                                         case "id":
-                                            ((Message) obj).setId(val);
+                                            msg.setId(val);
                                             break;
                                         case "from":
-                                            ((Message) obj).setFrom(val);
+                                            msg.setFrom(val);
                                             break;
                                         case "type":
-                                            ((Message) obj).setType(val);
+                                            msg.setType(val);
                                             break;
                                     }
                                 }
