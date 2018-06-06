@@ -68,7 +68,8 @@ public class SessionContext {
 
     @Override
     public String toString() {
-        return "\n[ user: " + getUser() +
+        return "\n[" +
+                " user: " + getUser() +
                 " to: " + getTo() +
                 " from: " + getFrom() +
                 " isAuthorized: " + isAuthorized() +

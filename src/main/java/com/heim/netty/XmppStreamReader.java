@@ -198,13 +198,13 @@ public class XmppStreamReader {
                                 }
                                 break;
                             case "thread":
-
                                 optionalIq =
                                         objects.stream().filter(
                                                 i -> i instanceof Message
                                         ).findFirst();
                                 if (optionalIq.isPresent()) {
-                                    ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Thread());
+                                    ((Message) optionalIq.get())
+                                            .getSubjectOrBodyOrThread().add(new Thread());
                                 }
                                 break;
                             case "iq":
