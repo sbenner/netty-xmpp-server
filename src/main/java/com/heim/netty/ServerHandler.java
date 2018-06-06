@@ -17,7 +17,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     //final static List<String> val = Collections.synchronizedList(new ArrayList());
 
-    final static StringBuffer buffer = new StringBuffer();
+
 
     public static String features = "<stream:features>" +
             "  <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>" +
@@ -106,8 +106,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 sessionContextMap.remove(ctx.channel().id());
             }
         });
-
-
     }
 
     @Override
@@ -121,37 +119,66 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         List<Object> objects = new ArrayList<>();
         System.out.println("INPUT CHANNEL READ: " + msg.toString());
 
+        SessionContext sessionContext = sessionContextMap.get(ctx.channel().id());
+        StringBuilder buffer = null;
+        if (sessionContext == null) {
+            sessionContext = new SessionContext();
+            sessionContext.setPacketBuffer(new StringBuilder());
+            sessionContextMap.put(ctx.channel().id(), sessionContext);
+        }
+        buffer = sessionContext.getPacketBuffer();
+
+
+        if (xmlstring.contains("auth"))//we cleanup the messy stuff
+        {
+            buffer.setLength(0);
+        }
+
+        if (xmlstring.startsWith("xmlns=") ||
+                xmlstring.startsWith("type=") ||
+                xmlstring.startsWith("id=") ||
+                xmlstring.startsWith("ver=") ||
+                xmlstring.startsWith("ext=") ||
+                xmlstring.startsWith("node=") ||
+                xmlstring.startsWith("version=") ||
+                xmlstring.startsWith("to=") ||
+                xmlstring.startsWith("from=")) {
+            buffer.append(" ");
+        }
         buffer.append(xmlstring.replaceAll("[\n\t]", " "));
+
         if (XmppStreamReader.validate(buffer.toString())) {
             objects = XmppStreamReader.read(buffer.toString());
             buffer.setLength(0);
         } else {
+            if (buffer.toString().contains("auth"))//we cleanup the messy stuff
+            {
+                buffer.setLength(0);
+            }
             return;
         }
 
-        SessionContext sessionContext = sessionContextMap.get(ctx.channel().id());
 
         System.out.println("Objects SIZE " + objects.size());
 
-        objects.forEach(System.out::println);
+        //  objects.forEach(System.out::println);
         //check if user is online
         //cleanup map with channels if offlin
         //store not sent messages into a queue then clean it up dump
 
         for (Object obj : objects) {
 
-            System.out.println(obj.toString());
+            System.out.println("object: " + obj.toString());
 
             if (obj instanceof Stream) {
-                if (sessionContext == null || !sessionContext.isAuthorized()) {
+                if (!sessionContext.isAuthorized()) {
                     ctx.writeAndFlush(String.format(text, ((Stream) obj).getTo())
                             + features);
-                    SessionContext context = new SessionContext();
-                    context.setCtx(ctx);
-                    context.setTo(((Stream) obj).getTo());
-                    sessionContextMap.put(ctx.channel().id(), context);
+                    sessionContext.setCtx(ctx);
+                    sessionContext.setTo(((Stream) obj).getTo());
                 } else if (sessionContext.isAuthorized()) {
                     ctx.writeAndFlush(String.format(authOk, sessionContext.getTo()));
+                    System.out.println("mek1");
                     return;
                 }
             }
@@ -161,25 +188,41 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 if (user != null) {
                     sessionContext.setAuthorized(true);
                     sessionContext.setUser(user);
-                    sessionContext.setCtx(ctx);
                     authorizedUserChannels.put(sessionContext.getUser() + "@" + sessionContext.getTo(),
                             sessionContext.getCtx().channel().id());
                     ctx.writeAndFlush(success + String.format(authOk, sessionContext.getTo()));
+                    System.out.println("mek2");
                     return;
                 }
-                //client.put(ctx.channel().id(), true);
 
 
+            }
+            if (obj instanceof Presence) {
+                Presence p = (Presence) obj;
+                if (p.getType() != null && p.getType().equals("unavailable")) {
+                    SessionContext c = sessionContextMap.remove(ctx.channel().id());
+                    authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
+                    ctx.close();
+                }
             }
 
             if (obj instanceof Message) {
 
                 ChannelId channelId = authorizedUserChannels.get(((Message) obj).getTo());
+                System.out.println(channelId);
                 if (channelId != null) {
-                    SessionContext userSessionContext =
-                            sessionContextMap.get(channelId);
+                    SessionContext userSessionContext = sessionContextMap.get(channelId);
+
+                    if (userSessionContext == null) {
+                        sessionContextMap.remove(channelId);
+                    }
 
                     if (userSessionContext != null && userSessionContext.getCtx() != null) {
+
+
+                        System.out.println(userSessionContext.toString());
+
+
                         Optional body =
                                 ((Message) obj).getSubjectOrBodyOrThread()
                                         .stream().
@@ -189,7 +232,13 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                         .stream().
                                         filter(i -> i instanceof Subject).findFirst();
 
+
+                        System.out.println("body present: " + body.isPresent());
+                        System.out.println("subj:" + subj.isPresent());
+
                         if (subj.isPresent() || body.isPresent()) {
+
+
                             String newMessage = String.format(message,
                                     sessionContext.getUser() + "@" + sessionContext.getTo()
                                     , ((Message) obj).getTo()
@@ -198,7 +247,13 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                     body.isPresent() ? ((Body) body.get()).getValue() : "");
 
                             System.out.println("NEW MESSAGE:------> " + newMessage);
-                            userSessionContext.getCtx().writeAndFlush(newMessage);
+
+                            if (userSessionContext.getCtx().channel().isWritable()) {
+                                userSessionContext.getCtx().writeAndFlush(newMessage);
+                            } else {
+                                sessionContextMap.remove(channelId);
+                                //store to be sent
+                            }
                             // return;
                         }
                     }
@@ -209,21 +264,11 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             }
 
             if (obj instanceof Iq) {
-                if (((Iq) obj).getAny() == null) {
-                    return;
-                }
-                switch (((Iq) obj).getAny().getClass().getName().toLowerCase()) {
-                    case "bind":
-                        break;
-                    case "session":
-                        break;
-                    case "query":
-                        break;
-                }
+
 
 
                 Iq res = (Iq) obj;
-                if (((Iq) obj).getAny() instanceof Bind &&
+                if ((((Iq) obj).getAny() != null) && ((Iq) obj).getAny() instanceof Bind &&
                         ((Iq) obj).getType().equals("set")) {
                     res.setType("result");
                     Bind b = (Bind) res.getAny();
@@ -248,15 +293,15 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
                     //  System.out.println(r);
                     ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
-                    // return;
+
                 }
-                if (((Iq) obj).getAny() instanceof Session) {
+                if ((((Iq) obj).getAny() != null) && ((Iq) obj).getAny() instanceof Session) {
                     if (((Iq) obj).getType().equals("set")) {
                         ctx.writeAndFlush("<iq type=\"result\" id=\"" + ((Iq) obj).getId() + "\"/>");
-                        // return;
+
                     }
                 }
-                if (((Iq) obj).getAny() instanceof Query) {
+                if ((((Iq) obj).getAny() != null) && ((Iq) obj).getAny() instanceof Query) {
                     Query q = (Query) ((Iq) obj).getAny();
                     if (((Iq) obj).getType().equals("get") &&
                             q.getNamespace().endsWith(":roster")) {
@@ -266,7 +311,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                 sessionContext.getTo(),
                                 ((Iq) obj).getId(),
                                 sessionContext.getTo()));
-                        // return;
+
                     }
                 }
 

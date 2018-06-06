@@ -86,6 +86,8 @@ public class XmppStreamReader {
                     factory.createXMLStreamReader(
                             new ByteArrayInputStream(xmlstring.getBytes()));
 
+            String msgId = null;
+            //keep track of thread ids
 
             while (reader.hasNext()) {
                 int event = reader.next();
@@ -116,7 +118,6 @@ public class XmppStreamReader {
                                 break;
                             case "auth":
                                 Auth a = new Auth();
-
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
                                     String val = reader.getAttributeValue(i);
@@ -148,6 +149,7 @@ public class XmppStreamReader {
                                             msg.setTo(val);
                                             break;
                                         case "id":
+                                            msgId = val;
                                             msg.setId(val);
                                             break;
                                         case "from":
@@ -158,12 +160,27 @@ public class XmppStreamReader {
                                             break;
                                     }
                                 }
+
+                                break;
+
+                            case "presence":
+                                Presence presence = new Presence();
+                                objects.add(presence);
+                                for (int i = 0; i < reader.getAttributeCount(); i++) {
+                                    String name = reader.getAttributeLocalName(i);
+                                    String val = reader.getAttributeValue(i);
+                                    switch (name) {
+                                        case "type":
+                                            presence.setType(val);
+                                            break;
+                                    }
+                                }
                                 break;
                             case "subject":
-
+                                final String sMsgId = msgId;
                                 optionalIq =
                                         objects.stream().filter(
-                                                i -> i instanceof Message
+                                                i -> (i instanceof Message) && ((Message) i).getId().equals(sMsgId)
                                         ).findFirst();
                                 if (optionalIq.isPresent()) {
                                     ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Subject());
@@ -171,9 +188,10 @@ public class XmppStreamReader {
 
                                 break;
                             case "body":
+                                final String bMsgId = msgId;
                                 optionalIq =
                                         objects.stream().filter(
-                                                i -> i instanceof Message
+                                                i -> (i instanceof Message) && ((Message) i).getId().equals(bMsgId)
                                         ).findFirst();
                                 if (optionalIq.isPresent()) {
                                     ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Body());
@@ -283,9 +301,10 @@ public class XmppStreamReader {
                                     break;
                                 case "subject":
                                     final String subj = tagContent;
+                                    final String sMsgId = msgId;
                                     optionalIq =
                                             objects.stream().filter(
-                                                    i -> i instanceof Message
+                                                    i -> (i instanceof Message) && ((Message) i).getId().equals(sMsgId)
                                             ).findFirst();
                                     if (optionalIq.isPresent() && tagContent != null) {
                                         ((Message) optionalIq.get()).getSubjectOrBodyOrThread()
@@ -295,10 +314,12 @@ public class XmppStreamReader {
                                     }
                                     break;
                                 case "body":
+                                    final String bMsgId = msgId;
                                     final String body = tagContent;
+                                    System.out.println("BODY!!!! " + body);
                                     optionalIq =
                                             objects.stream().filter(
-                                                    i -> i instanceof Message
+                                                    i -> (i instanceof Message) && ((Message) i).getId().equals(bMsgId)
                                             ).findFirst();
                                     if (optionalIq.isPresent()) {
                                         ((Message) optionalIq.get()).getSubjectOrBodyOrThread()
@@ -306,6 +327,7 @@ public class XmppStreamReader {
                                                 i -> ((Body) i).setValue(body)
                                         );
                                     }
+                                    System.out.println("objects: size: " + objects.size());
                                     break;
                                 case "thread":
                                     break;

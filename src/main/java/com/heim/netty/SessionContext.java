@@ -2,14 +2,23 @@ package com.heim.netty;
 
 
 import io.netty.channel.ChannelHandlerContext;
+import org.jivesoftware.smack.chat2.Chat;
 
-public class SessionContext {
+import java.util.Set;
+
+public class
+
+
+SessionContext {
 
     private ChannelHandlerContext ctx;
     private String to;
     private String from;
     private String user;
     private String jid;
+    private StringBuilder packetBuffer;
+    private Set<Chat> chatThreads;
+
     private boolean authorized = false;
 
     public String getJid() {
@@ -58,5 +67,24 @@ public class SessionContext {
 
     public void setUser(String user) {
         this.user = user;
+    }
+
+    @Override
+    public String toString() {
+        return "\n[ user: " + getUser() +
+                " to: " + getTo() +
+                " from: " + getFrom() +
+                " isAuthorized: " + isAuthorized() +
+                " JID: " + getJid() +
+                " ContextWritable " + getCtx().channel().isWritable() +
+                " ]\n";
+    }
+
+    public StringBuilder getPacketBuffer() {
+        return packetBuffer;
+    }
+
+    public void setPacketBuffer(StringBuilder packetBuffer) {
+        this.packetBuffer = packetBuffer;
     }
 }
