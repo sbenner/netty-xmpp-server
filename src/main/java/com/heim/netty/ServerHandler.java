@@ -113,48 +113,35 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        if (msg == null) {
+        if (msg == null || msg.toString().trim().equals("</stream:stream>")) {
             ctx.writeAndFlush("");
             return;
         }
-
-
+        String xmlstring = msg.toString();
         List<Object> objects = new ArrayList<>();
         System.out.println("INPUT CHANNEL READ: " + msg.toString());
-        String xmlstring = msg.toString().trim();
-        if (xmlstring.equals("</stream:stream>")) return;
 
-        buffer.append(xmlstring.trim().replaceAll("\n", ""));
-        if (XmppStreamReader.validate(buffer.toString().trim())) {
+        buffer.append(xmlstring.replaceAll("[\n\t]", " "));
+        if (XmppStreamReader.validate(buffer.toString())) {
             objects = XmppStreamReader.read(buffer.toString());
             buffer.setLength(0);
         } else {
             return;
         }
-//        if (!xmlstring.startsWith("<?xml") &&
-//                !xmlstring.endsWith("</stream:stream>") &&
-//                !xmlstring.startsWith("<stream:stream")
-//                && !xmlstring.endsWith("/>")
-//                && !xmlstring.endsWith("</iq>")
-//                && !xmlstring.endsWith("</presence>")
-//                && !xmlstring.endsWith("</priority>")
-//                && !xmlstring.endsWith("</message>")
-//                && !xmlstring.endsWith("</auth>")) {
-//            val.add(xmlstring);
-//        } else if (val.size() > 0) {
-//            xmlstring = val.get(val.size() - 1) + xmlstring;
-//            if(!xmlstring.endsWith(">")){return;}
-//            else{
-//                val.clear();
-//            }
-//        }
-//        if (val.size() == 0) {
-//
-//        }
 
         SessionContext sessionContext = sessionContextMap.get(ctx.channel().id());
 
+        System.out.println("Objects SIZE " + objects.size());
+
+        objects.forEach(System.out::println);
+        //check if user is online
+        //cleanup map with channels if offlin
+        //store not sent messages into a queue then clean it up dump
+
         for (Object obj : objects) {
+
+            System.out.println(obj.toString());
+
             if (obj instanceof Stream) {
                 if (sessionContext == null || !sessionContext.isAuthorized()) {
                     ctx.writeAndFlush(String.format(text, ((Stream) obj).getTo())
@@ -192,26 +179,28 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     SessionContext userSessionContext =
                             sessionContextMap.get(channelId);
 
+                    if (userSessionContext != null && userSessionContext.getCtx() != null) {
+                        Optional body =
+                                ((Message) obj).getSubjectOrBodyOrThread()
+                                        .stream().
+                                        filter(i -> i instanceof Body).findFirst();
+                        Optional subj =
+                                ((Message) obj).getSubjectOrBodyOrThread()
+                                        .stream().
+                                        filter(i -> i instanceof Subject).findFirst();
 
-                    Optional body =
-                            ((Message) obj).getSubjectOrBodyOrThread()
-                                    .stream().
-                                    filter(i -> i instanceof Body).findFirst();
-                    Optional subj =
-                            ((Message) obj).getSubjectOrBodyOrThread()
-                                    .stream().
-                                    filter(i -> i instanceof Subject).findFirst();
+                        if (subj.isPresent() || body.isPresent()) {
+                            String newMessage = String.format(message,
+                                    sessionContext.getUser() + "@" + sessionContext.getTo()
+                                    , ((Message) obj).getTo()
+                                    , ((Message) obj).getId(),
+                                    subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
+                                    body.isPresent() ? ((Body) body.get()).getValue() : "");
 
-                    if (subj.isPresent() || body.isPresent()) {
-                        String newMessage = String.format(message,
-                                sessionContext.getUser() + "@" + sessionContext.getTo()
-                                , ((Message) obj).getTo()
-                                , ((Message) obj).getId(),
-                                subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
-                                body.isPresent() ? ((Body) body.get()).getValue() : "");
-
-                        userSessionContext.getCtx().writeAndFlush(newMessage);
-                        return;
+                            System.out.println("NEW MESSAGE:------> " + newMessage);
+                            userSessionContext.getCtx().writeAndFlush(newMessage);
+                            // return;
+                        }
                     }
                 }
                 //client.put(ctx.channel().id(), true);
@@ -259,12 +248,12 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
                     //  System.out.println(r);
                     ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
-                    return;
+                    // return;
                 }
                 if (((Iq) obj).getAny() instanceof Session) {
                     if (((Iq) obj).getType().equals("set")) {
                         ctx.writeAndFlush("<iq type=\"result\" id=\"" + ((Iq) obj).getId() + "\"/>");
-                        return;
+                        // return;
                     }
                 }
                 if (((Iq) obj).getAny() instanceof Query) {
@@ -277,7 +266,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                 sessionContext.getTo(),
                                 ((Iq) obj).getId(),
                                 sessionContext.getTo()));
-                        return;
+                        // return;
                     }
                 }
 

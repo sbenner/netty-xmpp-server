@@ -57,13 +57,14 @@ public class XmppStreamReader {
                     factory.createXMLStreamReader(
                             new ByteArrayInputStream(xmlstring.getBytes()));
 
-            System.out.println("VALIDATING " + xmlstring);
+
             while (reader.hasNext()) {
                 reader.next();
             }
             isValid = true;
         } catch (Exception ex) {
             ex.printStackTrace();
+            System.out.println("ERRORED " + xmlstring);
         }
         return isValid;
     }
@@ -75,8 +76,8 @@ public class XmppStreamReader {
         xmlstring = buildXmlString(xmlstring);
 
         System.out.println("XML READER: " + xmlstring);
-        Object obj = null;
-        Object any = null;
+//        Object obj = null;
+//        Object any = null;
         String tagContent = null;
 
         try {
@@ -213,16 +214,16 @@ public class XmppStreamReader {
                                                 i -> i instanceof Iq
                                         ).findFirst();
                                 if (optionalIq.isPresent()) {
-                                    any = new Bind();
-                                    ((Iq) optionalIq.get()).setAny(any);
+                                    ((Iq) optionalIq.get()).setAny(new Bind());
                                 }
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
                                     String val = reader.getAttributeValue(i);
                                     switch (name) {
                                         case "jid":
-                                            if (any instanceof Bind && val != null)
-                                                ((Bind) any).setJid(val);
+                                            Bind b = (Bind) ((Iq) optionalIq.get()).getAny();
+                                            if (val != null)
+                                                b.setJid(val);
                                             break;
                                     }
                                 }
@@ -241,8 +242,6 @@ public class XmppStreamReader {
                                     q.setNamespace(reader.getNamespaceURI());
                                     ((Iq) optionalIq.get()).setAny(q);
                                 }
-
-
                                 break;
 
                         }
@@ -309,10 +308,7 @@ public class XmppStreamReader {
                                     }
                                     break;
                                 case "thread":
-
                                     break;
-
-
                             }
                         }
                         break;
