@@ -30,21 +30,27 @@ public class XmppStreamReader {
     private static final Logger logger = LoggerFactory.getLogger(XmppStreamReader.class);
 
 
+    private static String buildXmlString(String xmlstring) {
+        String xml = null;
+        if ((xmlstring.startsWith("<?xml") || xmlstring.contains("<stream:stream"))
+                && !xmlstring.contains("</stream:stream>")) {
+            xml = xmlstring += "</stream:stream>";
+        } else if (xmlstring.contains("</stream:stream>")
+                && !xmlstring.contains("<stream:stream")) {
+            xml = "<stream:stream>" + xmlstring;
+        }
+
+        if (!xmlstring.startsWith("<?xml"))
+            xml = "<xmpp>" + xmlstring + "</xmpp>";
+
+        return xml;
+    }
+
     static boolean validate(String xmlstring) {
         boolean isValid = false;
         try {
-            if ((xmlstring.startsWith("<?xml") || xmlstring.contains("<stream:stream"))
-                    && !xmlstring.contains("</stream:stream>")) {
-                xmlstring += "</stream:stream>";
-            } else if (xmlstring.contains("</stream:stream>")
-                    && !xmlstring.contains("<stream:stream")) {
-                xmlstring = "<stream:stream>" + xmlstring;
-            }
-//            else {
-////
-////            }
-            if (!xmlstring.startsWith("<?xml"))
-                xmlstring = "<xmpp>" + xmlstring + "</xmpp>";
+
+            xmlstring = buildXmlString(xmlstring);
 
             XMLInputFactory factory = XMLInputFactory.newInstance();
             XMLStreamReader reader =
@@ -66,16 +72,7 @@ public class XmppStreamReader {
 
         List<Object> objects = new ArrayList<>();
 
-        if (xmlstring.startsWith("<?xml") ||
-                (xmlstring.contains("<stream:stream") && xmlstring.endsWith("'en'>"))
-                && !xmlstring.contains("</stream:stream>")) {
-            xmlstring += "</stream:stream>";
-        } else if (xmlstring.contains("</stream:stream>")
-                && !xmlstring.contains("<stream:stream")) {
-            xmlstring = "<stream:stream>" + xmlstring;
-        } else {
-            xmlstring = "<xmpp>" + xmlstring + "</xmpp>";
-        }
+        xmlstring = buildXmlString(xmlstring);
 
         System.out.println("XML READER: " + xmlstring);
         Object obj = null;

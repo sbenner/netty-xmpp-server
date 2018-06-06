@@ -124,8 +124,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         String xmlstring = msg.toString().trim();
         if (xmlstring.equals("</stream:stream>")) return;
 
-        buffer.append(xmlstring);
-        if (XmppStreamReader.validate(buffer.toString())) {
+        buffer.append(xmlstring.trim().replaceAll("\n", ""));
+        if (XmppStreamReader.validate(buffer.toString().trim())) {
             objects = XmppStreamReader.read(buffer.toString());
             buffer.setLength(0);
         } else {
