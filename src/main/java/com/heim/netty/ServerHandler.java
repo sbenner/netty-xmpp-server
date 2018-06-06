@@ -3,6 +3,7 @@ package com.heim.netty;
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.*;
+import com.heim.models.client.Thread;
 import com.heim.utils.Base64Utils;
 import io.netty.channel.*;
 import io.netty.handler.timeout.IdleState;
@@ -65,9 +66,11 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             "  </query>" +
             "</iq>";
     static String message
-            = "<message xmlns=\"jabber:client\" from=\"%1$s\" type=\"chat\" to=\"%2$s\" id=\"%3$s\">\n" +
-            "<subject>%4$s</subject>\n" +
-            "<body>%5$s</body>\n" +
+            = "<message xmlns=\"jabber:client\" " +
+            "from=\"%1$s\" type=\"chat\" to=\"%2$s\" id=\"%3$s\">\n" +
+            "<subject>%4$s</subject>" +
+            "<body>%5$s</body>" +
+            "<thread>%6$s</thread>" +
             "</message>";
 
 
@@ -81,11 +84,16 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             "    </item>" +
             "  </query>" +
             "</iq>";
+
+
     static Map<ChannelId, SessionContext>
             sessionContextMap = new ConcurrentHashMap<>();
 
     static Map<String, ChannelId>
             authorizedUserChannels = new ConcurrentHashMap<>();
+
+    static Map<String, Chat>
+            chatMap = new ConcurrentHashMap<>();
 
     static Map<String, String> userRoster = new HashMap<>();
 
@@ -208,6 +216,17 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
             if (obj instanceof Message) {
 
+                Message incMessge = (Message) obj;
+
+                Optional thread =
+                        ((Message) obj).getSubjectOrBodyOrThread()
+                                .stream().
+                                filter(i -> i instanceof Thread).findFirst();
+
+                thread.ifPresent((Thread) i -> {
+                    i.
+                })
+
                 ChannelId channelId = authorizedUserChannels.get(((Message) obj).getTo());
                 System.out.println(channelId);
                 if (channelId != null) {
@@ -232,21 +251,28 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                         .stream().
                                         filter(i -> i instanceof Subject).findFirst();
 
+                        Optional thread =
+                                ((Message) obj).getSubjectOrBodyOrThread()
+                                        .stream().
+                                        filter(i -> i instanceof Thread).findFirst();
+
+
 
                         System.out.println("body present: " + body.isPresent());
                         System.out.println("subj:" + subj.isPresent());
 
                         if (subj.isPresent() || body.isPresent()) {
-
-
                             String newMessage = String.format(message,
                                     sessionContext.getUser() + "@" + sessionContext.getTo()
                                     , ((Message) obj).getTo()
                                     , ((Message) obj).getId(),
                                     subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
-                                    body.isPresent() ? ((Body) body.get()).getValue() : "");
+                                    body.isPresent() ?
+                                            ((Body) body.get()).getValue() : "",
+                                    thread.isPresent() ?
+                                            ((Thread) thread.get()).getValue() : "");
 
-                            System.out.println("NEW MESSAGE:------> " + newMessage);
+                            System.out.println("NEW MESSAGE:\n " + newMessage);
 
                             if (userSessionContext.getCtx().channel().isWritable()) {
                                 userSessionContext.getCtx().writeAndFlush(newMessage);
@@ -265,8 +291,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
             if (obj instanceof Iq) {
 
-
-
                 Iq res = (Iq) obj;
                 if ((((Iq) obj).getAny() != null) && ((Iq) obj).getAny() instanceof Bind &&
                         ((Iq) obj).getType().equals("set")) {
@@ -278,20 +302,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
                     sessionContext.setJid(jid);
 
-                    //StringWriter sw = new StringWriter();
-//                marshaller().marshal(res, sw);
-//                String r =
-//                        sw.toString()
-//                                .replaceAll(":ns0", "")
-//                                .replaceAll("ns0:", "")
-//                                .replaceAll(":ns3", "")
-//                                .replaceAll(":ns2", "")
-//                                .replaceAll(":ns1", "")
-//                                .replaceAll("ns3:", "")
-//                                .replaceAll("ns2:", "")
-//                                .replaceAll("ns1:", "");
-
-                    //  System.out.println(r);
                     ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
 
                 }
