@@ -1,15 +1,12 @@
 package com.heim.netty;
 
 
+import com.heim.models.client.Chat;
 import io.netty.channel.ChannelHandlerContext;
-import org.jivesoftware.smack.chat2.Chat;
 
 import java.util.Set;
 
-public class
-
-
-SessionContext {
+public class SessionContext {
 
     private ChannelHandlerContext ctx;
     private String to;
@@ -86,5 +83,13 @@ SessionContext {
 
     public void setPacketBuffer(StringBuilder packetBuffer) {
         this.packetBuffer = packetBuffer;
+    }
+
+    public Set<Chat> getChatThreads() {
+        return chatThreads;
+    }
+
+    public void setChatThreads(Set<Chat> chatThreads) {
+        this.chatThreads = chatThreads;
     }
 }
