@@ -80,6 +80,7 @@ public class XmppStreamReader {
 //        Object any = null;
         String tagContent = null;
 
+
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
             XMLStreamReader reader =
@@ -88,6 +89,7 @@ public class XmppStreamReader {
 
             String msgId = null;
             //keep track of thread ids
+            Message msg = null;
 
             while (reader.hasNext()) {
                 int event = reader.next();
@@ -139,7 +141,7 @@ public class XmppStreamReader {
                                 }
                                 break;
                             case "message":
-                                Message msg = new Message();
+                                msg = new Message();
                                 objects.add(msg);
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
@@ -177,35 +179,16 @@ public class XmppStreamReader {
                                 }
                                 break;
                             case "subject":
-                                final String sMsgId = msgId;
-                                optionalIq =
-                                        objects.stream().filter(
-                                                i -> (i instanceof Message) && ((Message) i).getId().equals(sMsgId)
-                                        ).findFirst();
-                                if (optionalIq.isPresent()) {
-                                    ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Subject());
-                                }
-
+                                if (msg != null)
+                                    msg.getSubjectOrBodyOrThread().add(new Subject());
                                 break;
                             case "body":
-                                final String bMsgId = msgId;
-                                optionalIq =
-                                        objects.stream().filter(
-                                                i -> (i instanceof Message) && ((Message) i).getId().equals(bMsgId)
-                                        ).findFirst();
-                                if (optionalIq.isPresent()) {
-                                    ((Message) optionalIq.get()).getSubjectOrBodyOrThread().add(new Body());
-                                }
+                                if (msg != null)
+                                    msg.getSubjectOrBodyOrThread().add(new Body());
                                 break;
                             case "thread":
-                                optionalIq =
-                                        objects.stream().filter(
-                                                i -> i instanceof Message
-                                        ).findFirst();
-                                if (optionalIq.isPresent()) {
-                                    ((Message) optionalIq.get())
-                                            .getSubjectOrBodyOrThread().add(new Thread());
-                                }
+                                if (msg != null)
+                                    msg.getSubjectOrBodyOrThread().add(new Thread());
                                 break;
                             case "iq":
                                 Iq iq = new Iq();
@@ -297,39 +280,27 @@ public class XmppStreamReader {
                                     if (optionalIq.isPresent() && tagContent != null) {
                                         ((Auth) optionalIq.get()).setValue(tagContent);
                                     }
-
                                     break;
                                 case "subject":
                                     final String subj = tagContent;
-                                    final String sMsgId = msgId;
-                                    optionalIq =
-                                            objects.stream().filter(
-                                                    i -> (i instanceof Message) && ((Message) i).getId().equals(sMsgId)
-                                            ).findFirst();
-                                    if (optionalIq.isPresent() && tagContent != null) {
-                                        ((Message) optionalIq.get()).getSubjectOrBodyOrThread()
+                                    msg.getSubjectOrBodyOrThread()
                                                 .stream().filter(i -> i instanceof Subject).forEach(
                                                 i -> ((Subject) i).setValue(subj)
                                         );
-                                    }
                                     break;
                                 case "body":
-                                    final String bMsgId = msgId;
                                     final String body = tagContent;
-                                    System.out.println("BODY!!!! " + body);
-                                    optionalIq =
-                                            objects.stream().filter(
-                                                    i -> (i instanceof Message) && ((Message) i).getId().equals(bMsgId)
-                                            ).findFirst();
-                                    if (optionalIq.isPresent()) {
-                                        ((Message) optionalIq.get()).getSubjectOrBodyOrThread()
-                                                .stream().filter(i -> i instanceof Body).forEach(
-                                                i -> ((Body) i).setValue(body)
-                                        );
-                                    }
-                                    System.out.println("objects: size: " + objects.size());
+                                    msg.getSubjectOrBodyOrThread()
+                                            .stream().filter(i -> i instanceof Body).forEach(
+                                            i -> ((Body) i).setValue(body)
+                                    );
                                     break;
                                 case "thread":
+                                    final String threadId = tagContent;
+                                    msg.getSubjectOrBodyOrThread()
+                                            .stream().filter(i -> i instanceof Thread).forEach(
+                                            i -> ((Thread) i).setValue(threadId)
+                                    );
                                     break;
                             }
                         }

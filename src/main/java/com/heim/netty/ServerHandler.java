@@ -223,9 +223,25 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                 .stream().
                                 filter(i -> i instanceof Thread).findFirst();
 
-                thread.ifPresent((Thread) i -> {
-                    i.
-                })
+                thread.ifPresent(i -> {
+                    String threadId = ((Thread) i).getValue();
+                    Chat c = chatMap.get(threadId);
+                    if (c == null) {
+                        c = new Chat();
+                        c.setThreadId(((Thread) i).getValue());
+                        Set<String> peers = new HashSet<>();
+                        peers.add(incMessge.getTo());
+                        peers.add(incMessge.getFrom());
+                        c.setPeers(peers);
+                        chatMap.put(threadId, c);
+                    } else {
+                        Set<String> peers = c.getPeers();
+                        peers.add(incMessge.getTo());
+                        peers.add(incMessge.getFrom());
+                        c.setPeers(peers);
+                        chatMap.put(threadId, c);
+                    }
+                });
 
                 ChannelId channelId = authorizedUserChannels.get(((Message) obj).getTo());
                 System.out.println(channelId);
@@ -250,12 +266,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                                 ((Message) obj).getSubjectOrBodyOrThread()
                                         .stream().
                                         filter(i -> i instanceof Subject).findFirst();
-
-                        Optional thread =
-                                ((Message) obj).getSubjectOrBodyOrThread()
-                                        .stream().
-                                        filter(i -> i instanceof Thread).findFirst();
-
 
 
                         System.out.println("body present: " + body.isPresent());

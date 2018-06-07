@@ -4,7 +4,22 @@ import java.util.Set;
 
 public class Chat {
 
-    String threadId;
-    Set<String> peers;
+    private String threadId;
+    private Set<String> peers;
 
+    public String getThreadId() {
+        return threadId;
+    }
+
+    public void setThreadId(String threadId) {
+        this.threadId = threadId;
+    }
+
+    public Set<String> getPeers() {
+        return peers;
+    }
+
+    public void setPeers(Set<String> peers) {
+        this.peers = peers;
+    }
 }
