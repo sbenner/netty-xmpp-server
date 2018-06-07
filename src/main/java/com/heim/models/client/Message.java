@@ -89,6 +89,8 @@ public class Message {
     @XmlSchemaType(name = "language")
     protected String lang;
 
+    private String channelId;
+
     /**
      * Gets the value of the subjectOrBodyOrThread property.
      *
@@ -270,4 +272,11 @@ public class Message {
         this.lang = value;
     }
 
+    public String getChannelId() {
+        return channelId;
+    }
+
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
+    }
 }

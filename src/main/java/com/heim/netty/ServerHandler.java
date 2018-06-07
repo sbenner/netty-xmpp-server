@@ -12,6 +12,7 @@ import org.jivesoftware.smack.packet.Session;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
@@ -102,6 +103,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         userRoster.put("test", rosterTest);
     }
 
+    static Queue<Message> messageQueue = new LinkedBlockingQueue();
+
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
@@ -156,7 +159,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         buffer.append(xmlstring.replaceAll("[\n\t]", " "));
 
         if (XmppStreamReader.validate(buffer.toString())) {
-            objects = XmppStreamReader.read(buffer.toString());
+            objects = XmppStreamReader.read(buffer.toString(),
+                    ctx.channel().id().asShortText());
             buffer.setLength(0);
         } else {
             if (buffer.toString().contains("auth"))//we cleanup the messy stuff
@@ -200,6 +204,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                             sessionContext.getCtx().channel().id());
                     ctx.writeAndFlush(success + String.format(authOk, sessionContext.getTo()));
                     System.out.println("mek2");
+                    //handle messages from queue
+                    //compare channelId,
+                    // set the from values to messages from the channel and send them
+                    //
                     return;
                 }
 
@@ -216,93 +224,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
             if (obj instanceof Message) {
 
-                Message incMessge = (Message) obj;
-
-                Optional thread =
-                        ((Message) obj).getSubjectOrBodyOrThread()
-                                .stream().
-                                filter(i -> i instanceof Thread).findFirst();
-
-                thread.ifPresent(i -> {
-                    String threadId = ((Thread) i).getValue();
-                    Chat c = chatMap.get(threadId);
-                    if (c == null) {
-                        c = new Chat();
-                        c.setThreadId(((Thread) i).getValue());
-                        Set<String> peers = new HashSet<>();
-                        peers.add(incMessge.getTo());
-                        peers.add(incMessge.getFrom());
-                        c.setPeers(peers);
-                        chatMap.put(threadId, c);
-
-                    } else {
-                        Set<String> peers = c.getPeers();
-                        peers.add(incMessge.getTo());
-                        peers.add(incMessge.getFrom());
-                        c.setPeers(peers);
-                        chatMap.put(threadId, c);
-                    }
-                });
-
-                ChannelId channelId = authorizedUserChannels.get(((Message) obj).getTo());
-                System.out.println(channelId);
-                if (channelId != null) {
-                    SessionContext userSessionContext = sessionContextMap.get(channelId);
-
-                    if (userSessionContext == null) {
-                        sessionContextMap.remove(channelId);
-                    }
-
-                    if (userSessionContext != null && userSessionContext.getCtx() != null) {
-
-
-                        System.out.println(userSessionContext.toString());
-
-
-                        Optional body =
-                                ((Message) obj).getSubjectOrBodyOrThread()
-                                        .stream().
-                                        filter(i -> i instanceof Body).findFirst();
-                        Optional subj =
-                                ((Message) obj).getSubjectOrBodyOrThread()
-                                        .stream().
-                                        filter(i -> i instanceof Subject).findFirst();
-
-
-                        System.out.println("body present: " + body.isPresent());
-                        System.out.println("subj:" + subj.isPresent());
-
-                        if (subj.isPresent() || body.isPresent()) {
-
-
-                            if (sessionContext.isAuthorized()) {
-                                String newMessage = String.format(message,
-                                        sessionContext.getUser() + "@" + sessionContext.getTo()
-                                        , ((Message) obj).getTo()
-                                        , ((Message) obj).getId(),
-                                        subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
-                                        body.isPresent() ?
-                                                ((Body) body.get()).getValue() : "",
-                                        thread.isPresent() ?
-                                                ((Thread) thread.get()).getValue() : "");
-
-                                System.out.println("NEW MESSAGE:\n " + newMessage);
-
-                                if (userSessionContext.getCtx().channel().isWritable()) {
-                                    userSessionContext.getCtx().writeAndFlush(newMessage);
-                                } else {
-                                    sessionContextMap.remove(channelId);
-                                    //store to be sent
-                                }
-                            } else {
-
-                                //addto queue
-
-                            }
-                            // return;
-                        }
-                    }
-                }
+                handleMessage(sessionContext, (Message) obj);
                 //client.put(ctx.channel().id(), true);
 
 
@@ -347,6 +269,97 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
+    }
+
+    private void handleMessage(SessionContext sessionContext, Message obj) {
+        Message incMessge = obj;
+
+        Optional thread =
+                obj.getSubjectOrBodyOrThread()
+                        .stream().
+                        filter(i -> i instanceof Thread).findFirst();
+
+        thread.ifPresent(i -> {
+            String threadId = ((Thread) i).getValue();
+            Chat c = chatMap.get(threadId);
+            if (c == null) {
+                c = new Chat();
+                c.setThreadId(((Thread) i).getValue());
+                Set<String> peers = new HashSet<>();
+                peers.add(incMessge.getTo());
+                peers.add(incMessge.getFrom());
+                c.setPeers(peers);
+                chatMap.put(threadId, c);
+
+            } else {
+                Set<String> peers = c.getPeers();
+                peers.add(incMessge.getTo());
+                peers.add(incMessge.getFrom());
+                c.setPeers(peers);
+                chatMap.put(threadId, c);
+            }
+        });
+
+        ChannelId channelId = authorizedUserChannels.get(obj.getTo());
+        System.out.println(channelId);
+        if (channelId != null) {
+            SessionContext userSessionContext = sessionContextMap.get(channelId);
+
+            if (userSessionContext == null) {
+                sessionContextMap.remove(channelId);
+            }
+
+            if (userSessionContext != null && userSessionContext.getCtx() != null) {
+
+
+                System.out.println(userSessionContext.toString());
+
+
+                Optional body =
+                        obj.getSubjectOrBodyOrThread()
+                                .stream().
+                                filter(i -> i instanceof Body).findFirst();
+                Optional subj =
+                        obj.getSubjectOrBodyOrThread()
+                                .stream().
+                                filter(i -> i instanceof Subject).findFirst();
+
+
+                System.out.println("body present: " + body.isPresent());
+                System.out.println("subj:" + subj.isPresent());
+
+                if (subj.isPresent() || body.isPresent()) {
+
+
+                    if (sessionContext.isAuthorized()) {
+
+                        String newMessage = String.format(message,
+                                sessionContext.getUser() + "@" + sessionContext.getTo()
+                                , obj.getTo()
+                                , obj.getId(),
+                                subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
+                                body.isPresent() ?
+                                        ((Body) body.get()).getValue() : "",
+                                thread.isPresent() ?
+                                        ((Thread) thread.get()).getValue() : "");
+
+                        System.out.println("NEW MESSAGE:\n " + newMessage);
+
+                        if (userSessionContext.getCtx().channel().isWritable()) {
+                            userSessionContext.getCtx().writeAndFlush(newMessage);
+                        } else {
+                            sessionContextMap.remove(channelId);
+                            //store to be sent
+                        }
+                    } else {
+                        messageQueue.add(incMessge);
+                        //addto queue
+
+                    }
+                    // return;
+                }
+            }
+        }
     }
 
 

@@ -69,7 +69,7 @@ public class XmppStreamReader {
         return isValid;
     }
 
-    static List<Object> read(String xmlstring) {
+    static List<Object> read(String xmlstring, String channelId) {
 
         List<Object> objects = new ArrayList<>();
 
@@ -141,6 +141,7 @@ public class XmppStreamReader {
                                 break;
                             case "message":
                                 msg = new Message();
+                                msg.setChannelId(channelId);
                                 objects.add(msg);
                                 for (int i = 0; i < reader.getAttributeCount(); i++) {
                                     String name = reader.getAttributeLocalName(i);
