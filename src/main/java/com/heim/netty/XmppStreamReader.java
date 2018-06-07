@@ -87,7 +87,6 @@ public class XmppStreamReader {
                     factory.createXMLStreamReader(
                             new ByteArrayInputStream(xmlstring.getBytes()));
 
-            String msgId = null;
             //keep track of thread ids
             Message msg = null;
 
@@ -151,7 +150,6 @@ public class XmppStreamReader {
                                             msg.setTo(val);
                                             break;
                                         case "id":
-                                            msgId = val;
                                             msg.setId(val);
                                             break;
                                         case "from":

@@ -234,6 +234,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                         peers.add(incMessge.getFrom());
                         c.setPeers(peers);
                         chatMap.put(threadId, c);
+
                     } else {
                         Set<String> peers = c.getPeers();
                         peers.add(incMessge.getTo());
@@ -272,6 +273,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                         System.out.println("subj:" + subj.isPresent());
 
                         if (subj.isPresent() || body.isPresent()) {
+
+
+
                             String newMessage = String.format(message,
                                     sessionContext.getUser() + "@" + sessionContext.getTo()
                                     , ((Message) obj).getTo()
