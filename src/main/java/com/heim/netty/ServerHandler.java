@@ -204,10 +204,13 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                             sessionContext.getCtx().channel().id());
                     ctx.writeAndFlush(success + String.format(authOk, sessionContext.getTo()));
                     System.out.println("mek2");
-                    //handle messages from queue
-                    //compare channelId,
-                    // set the from values to messages from the channel and send them
-                    //
+                    //TODO:
+                    //Handle messages from queue
+                    //Compare channelId,
+                    //Set the from values to messages from the channel and send them
+                    //Don;t keep messages forever in queue
+                    //Create  message queue validation thread
+
                     return;
                 }
 
