@@ -390,7 +390,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
                         System.out.println("NEW MESSAGE:\n " + newMessage);
                         userToSessionContext.getCtx().writeAndFlush(newMessage);
-                        messageQueue.remove(obj);
+
                     } else {
                         sessionContextMap.remove(userToSessionContext.getCtx().channel().id());
                         authorizedUserChannels.remove(sendToUser);
