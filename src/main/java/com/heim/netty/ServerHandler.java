@@ -113,7 +113,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         new Thread(() -> {
             try {
                 while (!Thread.interrupted()) {
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                     Message m = messageQueue.poll();
                     if (m != null)
                         executor.execute(new MessageHandler(m));
@@ -394,8 +394,11 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     } else {
                         sessionContextMap.remove(userToSessionContext.getCtx().channel().id());
                         authorizedUserChannels.remove(sendToUser);
+                        messageQueue.add(obj);
                         //store to be sent
                     }
+                } else {
+                    messageQueue.add(obj);
                 }
                 // return;
             }
