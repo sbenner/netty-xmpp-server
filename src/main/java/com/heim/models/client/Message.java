@@ -8,6 +8,7 @@
 
 package com.heim.models.client;
 
+import io.netty.channel.ChannelId;
 import org.w3c.dom.Element;
 
 import javax.xml.bind.annotation.*;
@@ -89,7 +90,7 @@ public class Message {
     @XmlSchemaType(name = "language")
     protected String lang;
 
-    private String channelId;
+    private ChannelId channelId;
 
     /**
      * Gets the value of the subjectOrBodyOrThread property.
@@ -272,11 +273,12 @@ public class Message {
         this.lang = value;
     }
 
-    public String getChannelId() {
+    public ChannelId getChannelId() {
         return channelId;
     }
 
-    public void setChannelId(String channelId) {
+    public void setChannelId(ChannelId channelId) {
         this.channelId = channelId;
     }
+
 }

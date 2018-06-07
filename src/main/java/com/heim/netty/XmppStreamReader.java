@@ -3,6 +3,7 @@ package com.heim.netty;
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.*;
+import io.netty.channel.ChannelId;
 import org.jivesoftware.smack.packet.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class XmppStreamReader {
         return isValid;
     }
 
-    static List<Object> read(String xmlstring, String channelId) {
+    static List<Object> read(String xmlstring, ChannelId channelId) {
 
         List<Object> objects = new ArrayList<>();
 
