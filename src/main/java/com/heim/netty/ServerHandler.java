@@ -275,24 +275,29 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                         if (subj.isPresent() || body.isPresent()) {
 
 
+                            if (sessionContext.isAuthorized()) {
+                                String newMessage = String.format(message,
+                                        sessionContext.getUser() + "@" + sessionContext.getTo()
+                                        , ((Message) obj).getTo()
+                                        , ((Message) obj).getId(),
+                                        subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
+                                        body.isPresent() ?
+                                                ((Body) body.get()).getValue() : "",
+                                        thread.isPresent() ?
+                                                ((Thread) thread.get()).getValue() : "");
 
-                            String newMessage = String.format(message,
-                                    sessionContext.getUser() + "@" + sessionContext.getTo()
-                                    , ((Message) obj).getTo()
-                                    , ((Message) obj).getId(),
-                                    subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
-                                    body.isPresent() ?
-                                            ((Body) body.get()).getValue() : "",
-                                    thread.isPresent() ?
-                                            ((Thread) thread.get()).getValue() : "");
+                                System.out.println("NEW MESSAGE:\n " + newMessage);
 
-                            System.out.println("NEW MESSAGE:\n " + newMessage);
-
-                            if (userSessionContext.getCtx().channel().isWritable()) {
-                                userSessionContext.getCtx().writeAndFlush(newMessage);
+                                if (userSessionContext.getCtx().channel().isWritable()) {
+                                    userSessionContext.getCtx().writeAndFlush(newMessage);
+                                } else {
+                                    sessionContextMap.remove(channelId);
+                                    //store to be sent
+                                }
                             } else {
-                                sessionContextMap.remove(channelId);
-                                //store to be sent
+
+                                //addto queue
+
                             }
                             // return;
                         }
