@@ -191,14 +191,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-
-        System.out.println("Objects SIZE " + objects.size());
-
-        //  objects.forEach(System.out::println);
-        //check if user is online
-        //cleanup map with channels if offlin
-        //store not sent messages into a queue then clean it up dump
-
         for (Object obj : objects) {
 
             System.out.println("object: " + obj.toString());
@@ -247,10 +239,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
             if (obj instanceof Message) {
                 messageQueue.add((Message) obj);
-                //handleMessage(sessionContext, (Message) obj);
-                //client.put(ctx.channel().id(), true);
-
-
             }
 
             if (obj instanceof Iq) {
@@ -298,7 +286,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     private void handleMessage(Message obj) {
 
-        Message incMessge = obj;
         Optional thread =
                 obj.getSubjectOrBodyOrThread()
                         .stream().
@@ -311,15 +298,15 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 c = new Chat();
                 c.setThreadId(((ChatThread) i).getValue());
                 Set<String> peers = new HashSet<>();
-                peers.add(incMessge.getTo());
-                peers.add(incMessge.getFrom());
+                peers.add(obj.getTo());
+                peers.add(obj.getFrom());
                 c.setPeers(peers);
                 chatMap.put(threadId, c);
 
             } else {
                 Set<String> peers = c.getPeers();
-                peers.add(incMessge.getTo());
-                peers.add(incMessge.getFrom());
+                peers.add(obj.getTo());
+                peers.add(obj.getFrom());
                 c.setPeers(peers);
                 chatMap.put(threadId, c);
             }
@@ -334,10 +321,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         if (channelToId != null)
             userToSessionContext =
                     sessionContextMap.get(channelToId);
-
-//            if (userSessionContext == null) {
-//                sessionContextMap.remove(channelId);
-//            }
 
         if (userFromSessionContext != null
                 && userFromSessionContext.getCtx() != null) {
