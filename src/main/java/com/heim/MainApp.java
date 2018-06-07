@@ -22,7 +22,7 @@ public class MainApp {
 //       // main.addRouteBuilder(new MyRouteBuilder());
 //        trustall();
 //        EmbeddedXmppTestServer server = new EmbeddedXmppTestServer();
-//        Thread.sleep(5000);
+//        ChatThread.sleep(5000);
 //        XmppEndpoint endpoint  = new XmppEndpoint();
 //        endpoint.setHost("localhost");
 //        endpoint.setPort(5222);

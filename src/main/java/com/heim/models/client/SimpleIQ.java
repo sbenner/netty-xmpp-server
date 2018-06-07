@@ -17,6 +17,7 @@ package com.heim.models.client;
 
 import org.jivesoftware.smack.packet.IQ;
 
+
 /**
  * A simple IQ.
  * <p>
@@ -32,6 +33,8 @@ public abstract class SimpleIQ extends IQ {
 
     @Override
     protected IQChildElementXmlStringBuilder getIQChildElementBuilder(IQChildElementXmlStringBuilder xml) {
+
+
         xml.setEmptyElement();
         return xml;
     }

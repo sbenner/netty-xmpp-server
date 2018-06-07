@@ -98,7 +98,7 @@
 //
 //    public static void main(String[] args) throws IOException {
 //        NioServer server = new NioServer(5222);
-//        (new Thread(server)).start();
+//        (new ChatThread(server)).start();
 //    }
 //
 //    static Unmarshaller unmarshaller;

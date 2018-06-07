@@ -33,7 +33,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
         "value"
 })
 @XmlRootElement(name = "thread")
-public class Thread {
+public class ChatThread {
 
     @XmlValue
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)

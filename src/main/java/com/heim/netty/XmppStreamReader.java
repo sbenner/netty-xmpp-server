@@ -3,7 +3,6 @@ package com.heim.netty;
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.*;
-import com.heim.models.client.Thread;
 import org.jivesoftware.smack.packet.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,7 +186,7 @@ public class XmppStreamReader {
                                 break;
                             case "thread":
                                 if (msg != null)
-                                    msg.getSubjectOrBodyOrThread().add(new Thread());
+                                    msg.getSubjectOrBodyOrThread().add(new ChatThread());
                                 break;
                             case "iq":
                                 Iq iq = new Iq();
@@ -297,8 +296,8 @@ public class XmppStreamReader {
                                 case "thread":
                                     final String threadId = tagContent;
                                     msg.getSubjectOrBodyOrThread()
-                                            .stream().filter(i -> i instanceof Thread).forEach(
-                                            i -> ((Thread) i).setValue(threadId)
+                                            .stream().filter(i -> i instanceof ChatThread).forEach(
+                                            i -> ((ChatThread) i).setValue(threadId)
                                     );
                                     break;
                             }

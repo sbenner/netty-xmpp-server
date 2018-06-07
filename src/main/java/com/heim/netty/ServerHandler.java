@@ -3,7 +3,6 @@ package com.heim.netty;
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.*;
-import com.heim.models.client.Thread;
 import com.heim.utils.Base64Utils;
 import io.netty.channel.*;
 import io.netty.handler.timeout.IdleState;
@@ -13,6 +12,8 @@ import org.jivesoftware.smack.packet.Session;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
@@ -104,7 +105,29 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     static Queue<Message> messageQueue = new LinkedBlockingQueue();
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 150,
+            5, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>());
 
+    SessionContext sessionContext;
+
+
+    public ServerHandler() {
+        new Thread(() -> {
+            try {
+                while (!Thread.interrupted()) {
+                    Thread.sleep(100);
+                    Message m = messageQueue.peek();
+                    if (m != null && sessionContext != null)
+                        executor.execute(new MessageHandler(m, sessionContext));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        ).start();
+
+    }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
@@ -114,7 +137,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         closeFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                sessionContextMap.remove(ctx.channel().id());
+                SessionContext c = sessionContextMap.remove(ctx.channel().id());
+                authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
             }
         });
     }
@@ -170,6 +194,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (this.sessionContext == null)
+            this.sessionContext = sessionContext;
+
 
         System.out.println("Objects SIZE " + objects.size());
 
@@ -200,8 +227,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 if (user != null) {
                     sessionContext.setAuthorized(true);
                     sessionContext.setUser(user);
-                    authorizedUserChannels.put(sessionContext.getUser() + "@" + sessionContext.getTo(),
-                            sessionContext.getCtx().channel().id());
+
                     ctx.writeAndFlush(success + String.format(authOk, sessionContext.getTo()));
                     System.out.println("mek2");
                     //TODO:
@@ -219,15 +245,15 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             if (obj instanceof Presence) {
                 Presence p = (Presence) obj;
                 if (p.getType() != null && p.getType().equals("unavailable")) {
-                    SessionContext c = sessionContextMap.remove(ctx.channel().id());
-                    authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
+                    //SessionContext c = sessionContextMap.remove(ctx.channel().id());
+                    //authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
                     ctx.close();
                 }
             }
 
             if (obj instanceof Message) {
-
-                handleMessage(sessionContext, (Message) obj);
+                messageQueue.add((Message) obj);
+                //handleMessage(sessionContext, (Message) obj);
                 //client.put(ctx.channel().id(), true);
 
 
@@ -245,6 +271,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     // b.setJid();
 
                     sessionContext.setJid(jid);
+                    authorizedUserChannels.put(user,
+                            sessionContext.getCtx().channel().id());
 
                     ctx.writeAndFlush(String.format(bindOk, res.getId(), user, jid));
 
@@ -275,19 +303,19 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void handleMessage(SessionContext sessionContext, Message obj) {
-        Message incMessge = obj;
 
+        Message incMessge = obj;
         Optional thread =
                 obj.getSubjectOrBodyOrThread()
                         .stream().
-                        filter(i -> i instanceof Thread).findFirst();
+                        filter(i -> i instanceof ChatThread).findFirst();
 
         thread.ifPresent(i -> {
-            String threadId = ((Thread) i).getValue();
+            String threadId = ((ChatThread) i).getValue();
             Chat c = chatMap.get(threadId);
             if (c == null) {
                 c = new Chat();
-                c.setThreadId(((Thread) i).getValue());
+                c.setThreadId(((ChatThread) i).getValue());
                 Set<String> peers = new HashSet<>();
                 peers.add(incMessge.getTo());
                 peers.add(incMessge.getFrom());
@@ -305,6 +333,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
         ChannelId channelId = authorizedUserChannels.get(obj.getTo());
         System.out.println(channelId);
+        System.out.println("message queue size: " + messageQueue.size());
         if (channelId != null) {
             SessionContext userSessionContext = sessionContextMap.get(channelId);
 
@@ -312,7 +341,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 sessionContextMap.remove(channelId);
             }
 
-            if (userSessionContext != null && userSessionContext.getCtx() != null) {
+            if (userSessionContext != null
+                    && userSessionContext.getCtx() != null) {
 
 
                 System.out.println(userSessionContext.toString());
@@ -334,28 +364,34 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 if (subj.isPresent() || body.isPresent()) {
 
 
-                    if (sessionContext.isAuthorized()) {
+                    if (sessionContext != null && sessionContext.isAuthorized()) {
 
-                        String newMessage = String.format(message,
-                                sessionContext.getUser() + "@" + sessionContext.getTo()
+                        String sendToUser = userSessionContext.getUser() + "@" +
+                                userSessionContext.getTo();
+                        if (userSessionContext.getCtx().channel().isWritable() &&
+                                sendToUser.equals(obj.getTo())) {
+                            String newMessage = String.format(
+                                    message,
+                                    sessionContext.getUser()
+                                            + "@" + sessionContext.getTo()
                                 , obj.getTo()
                                 , obj.getId(),
                                 subj.isPresent() ? ((Subject) subj.get()).getValue() : "",
                                 body.isPresent() ?
                                         ((Body) body.get()).getValue() : "",
                                 thread.isPresent() ?
-                                        ((Thread) thread.get()).getValue() : "");
+                                        ((ChatThread) thread.get()).getValue() : "");
 
                         System.out.println("NEW MESSAGE:\n " + newMessage);
-
-                        if (userSessionContext.getCtx().channel().isWritable()) {
                             userSessionContext.getCtx().writeAndFlush(newMessage);
+                            messageQueue.remove(obj);
                         } else {
                             sessionContextMap.remove(channelId);
                             //store to be sent
                         }
                     } else {
                         messageQueue.add(incMessge);
+
                         //addto queue
 
                     }
@@ -363,6 +399,24 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         }
+
+    }
+
+    class MessageHandler implements Runnable {
+        SessionContext ctx;
+        private Message message;
+
+        MessageHandler(Message message, SessionContext ctx) {
+            this.message = message;
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void run() {
+            handleMessage(ctx, message);
+        }
+
+
     }
 
 
