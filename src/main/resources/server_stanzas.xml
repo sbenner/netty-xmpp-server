@@ -1,9 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <properties>
 
-    <prop name="message">
+
+    <property name="features">
         <value>
+            <![CDATA[
+        <stream:features>
+          <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
+            <mechanism>PLAIN</mechanism>
+          </mechanisms>
+            </stream:features>
+                ]]>
         </value>
-    </prop>
+    </property>
+
+    <property name="start">
+        <value>
+            <![CDATA[
+    <stream:stream xmlns='jabber:client'
+        xmlns:stream='http://etherx.jabber.org/streams'
+        from='%s'
+        id='c2s_234'
+        version='1.0'>
+                ]]>
+        </value>
+    </property>
+
+    <property name="authOk">
+        <value>
+            <![CDATA[
+   <stream:stream xmlns='jabber:client'
+        xmlns:stream='http://etherx.jabber.org/streams'
+         id='c2s_345' from='%s' version='1.0'>
+    <stream:features>
+     <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>
+     <session xmlns='urn:ietf:params:xml:ns:xmpp-session'/>
+    </stream:features>
+                ]]>
+        </value>
+    </property>
+
+    <property name="bindOk">
+        <value>
+            <![CDATA[
+        <iq type='result' id='%1$s' to='%2$s'>
+        <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
+        <jid>%3$s</jid>"
+        </bind>
+        </iq>
+                ]]>
+        </value>
+    </property>
+
+    <property name="success">
+        <value>
+            <![CDATA[
+       <success xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>
+                ]]>
+        </value>
+    </property>
+
+
+    <!--<property name="res1">-->
+    <!--<value>-->
+    <!--<![CDATA[-->
+    <!--<stream:stream-->
+    <!--xmlns='jabber:server'-->
+    <!--xmlns:stream='http://etherx.jabber.org/streams'-->
+    <!--from='%s'-->
+    <!--id='s2s_123'-->
+    <!--version='1.0'>-->
+    <!--]]>-->
+    <!--</value>-->
+    <!--</property>-->
+
+
+    <property name="rosterTest">
+        <value>
+            <![CDATA[
+        <iq to='%1$s' from='%2$s' type='result' id='%3$s'>
+          <query xmlns='jabber:iq:roster'>
+         <item jid='serg@%2$s'
+          name='Sergey'
+          subscription='both'>
+            <group>Friends</group>
+         </item>
+          </query>
+        </iq>
+              ]]>
+        </value>
+    </property>
+
+
+    <property name="message">
+        <value>
+            <![CDATA[
+         <message xmlns='jabber:client'
+        from='%1$s' type='chat' to='%2$s' id='%3$s'>
+        <subject>%4$s</subject>
+        <body>%5$s</body>
+        <thread>%6$s</thread>
+        </message>
+                ]]>
+        </value>
+    </property>
+
+
+    <property name="rosterSergey">
+        <value>
+            <![CDATA[
+    <iq to='%1$s'
+         from='%2$s' type='result' id='%3$s'>
+          <query xmlns='jabber:iq:roster'>
+    <item jid='test@localhost'
+          name='Tester'
+          subscription='both'>
+      <group>Friends</group>
+    </item>
+          </query>
+        </iq>
+                ]]>
+        </value>
+    </property>
 
 
 </properties>

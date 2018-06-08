@@ -56,15 +56,13 @@ public class XmppStreamReader {
             XMLStreamReader reader =
                     factory.createXMLStreamReader(
                             new ByteArrayInputStream(xmlstring.getBytes()));
-
-
             while (reader.hasNext()) {
                 reader.next();
             }
             isValid = true;
         } catch (Exception ex) {
             ex.printStackTrace();
-            System.out.println("ERRORED " + xmlstring);
+            logger.info("ERRORED " + xmlstring);
         }
         return isValid;
     }
@@ -72,14 +70,8 @@ public class XmppStreamReader {
     static List<Object> read(String xmlstring, ChannelId channelId) {
 
         List<Object> objects = new ArrayList<>();
-
         xmlstring = buildXmlString(xmlstring);
-
-        System.out.println("XML READER: " + xmlstring);
-//        Object obj = null;
-//        Object any = null;
-        String tagContent = null;
-
+        logger.info("XML READER: " + xmlstring);
 
         try {
             XMLInputFactory factory = XMLInputFactory.newInstance();
@@ -89,33 +81,16 @@ public class XmppStreamReader {
 
             //keep track of thread ids
             Message msg = null;
-
+            String tagContent = null;
             while (reader.hasNext()) {
                 int event = reader.next();
 
                 switch (event) {
                     case XMLStreamConstants.START_ELEMENT:
-                        System.out.println("localname: " + reader.getLocalName());
+                        logger.info("localname: " + reader.getLocalName());
                         switch (reader.getLocalName()) {
                             case "stream":
-                                Stream s = new Stream();
-                                objects.add(s);
-                                System.out.println("we found CDR!!!");
-                                for (int i = 0; i < reader.getAttributeCount(); i++) {
-                                    String name = reader.getAttributeLocalName(i);
-                                    String val = reader.getAttributeValue(i);
-                                    switch (name) {
-                                        case "to":
-                                            s.setTo(val);
-                                            break;
-                                        case "version":
-                                            s.setVersion(val);
-                                            break;
-                                        case "lang":
-                                            s.setLang(val);
-                                            break;
-                                    }
-                                }
+                                objects.add(makeStream(reader));
                                 break;
                             case "auth":
                                 Auth a = new Auth();
@@ -135,35 +110,15 @@ public class XmppStreamReader {
                                         objects.stream().filter(
                                                 i -> i instanceof Iq
                                         ).findFirst();
-                                if (optionalIq.isPresent() && ((Iq) optionalIq.get()).getType().equals("set")) {
+                                if (optionalIq.isPresent() &&
+                                        ((Iq) optionalIq.get()).getType().equals("set")) {
                                     ((Iq) optionalIq.get()).setAny(new Session());
                                 }
                                 break;
                             case "message":
-                                msg = new Message();
-                                msg.setChannelId(channelId);
-                                objects.add(msg);
-                                for (int i = 0; i < reader.getAttributeCount(); i++) {
-                                    String name = reader.getAttributeLocalName(i);
-                                    String val = reader.getAttributeValue(i);
-                                    switch (name) {
-                                        case "to":
-                                            msg.setTo(val);
-                                            break;
-                                        case "id":
-                                            msg.setId(val);
-                                            break;
-                                        case "from":
-                                            msg.setFrom(val);
-                                            break;
-                                        case "type":
-                                            msg.setType(val);
-                                            break;
-                                    }
-                                }
-
+                                tagContent = null;
+                                msg = makeMessage(channelId, objects, reader);
                                 break;
-
                             case "presence":
                                 Presence presence = new Presence();
                                 objects.add(presence);
@@ -190,60 +145,14 @@ public class XmppStreamReader {
                                     msg.getSubjectOrBodyOrThread().add(new ChatThread());
                                 break;
                             case "iq":
-                                Iq iq = new Iq();
-                                objects.add(iq);
-                                for (int i = 0; i < reader.getAttributeCount(); i++) {
-                                    String name = reader.getAttributeLocalName(i);
-                                    String val = reader.getAttributeValue(i);
-                                    switch (name) {
-                                        case "type":
-                                            iq.setType(val);
-                                            break;
-                                        case "to":
-                                            iq.setTo(val);
-                                            break;
-                                        case "id":
-                                            iq.setId(val);
-                                            break;
-                                    }
-                                }
+                                objects.add(makeIQ(reader));
                                 break;
                             case "bind":
-                                optionalIq =
-                                        objects.stream().filter(
-                                                i -> i instanceof Iq
-                                        ).findFirst();
-                                if (optionalIq.isPresent()) {
-                                    ((Iq) optionalIq.get()).setAny(new Bind());
-                                }
-                                for (int i = 0; i < reader.getAttributeCount(); i++) {
-                                    String name = reader.getAttributeLocalName(i);
-                                    String val = reader.getAttributeValue(i);
-                                    switch (name) {
-                                        case "jid":
-                                            Bind b = (Bind) ((Iq) optionalIq.get()).getAny();
-                                            if (val != null)
-                                                b.setJid(val);
-                                            break;
-                                    }
-                                }
-                                if (objects.get(0) instanceof Stream) {
-                                    objects.remove(0);
-                                }
-
+                                makeBind(objects, reader);
                                 break;
                             case "query":
-                                optionalIq =
-                                        objects.stream().filter(
-                                                i -> i instanceof Iq
-                                        ).findFirst();
-                                if (optionalIq.isPresent()) {
-                                    Query q = new Query();
-                                    q.setNamespace(reader.getNamespaceURI());
-                                    ((Iq) optionalIq.get()).setAny(q);
-                                }
+                                makeQuery(objects, reader);
                                 break;
-
                         }
                         break;
                     case XMLStreamConstants.CHARACTERS:
@@ -252,7 +161,7 @@ public class XmppStreamReader {
 
                     case XMLStreamConstants.END_ELEMENT:
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        System.out.println("END ELEMENT " + reader.getLocalName());
+                        logger.info("END ELEMENT " + reader.getLocalName());
                         if (objects.size() > 0) {
                             switch (reader.getLocalName()) {
                                 case "stream":
@@ -268,10 +177,10 @@ public class XmppStreamReader {
                                     }
                                     break;
                                 case "iq":
-                                    System.out.println(reader.getLocalName());
+                                    logger.info(reader.getLocalName());
                                     break;
                                 case "auth":
-                                    System.out.println(tagContent);
+                                    logger.info(tagContent);
                                     optionalIq =
                                             objects.stream().filter(
                                                     i -> i instanceof Auth
@@ -283,9 +192,9 @@ public class XmppStreamReader {
                                 case "subject":
                                     final String subj = tagContent;
                                     msg.getSubjectOrBodyOrThread()
-                                                .stream().filter(i -> i instanceof Subject).forEach(
-                                                i -> ((Subject) i).setValue(subj)
-                                        );
+                                            .stream().filter(i -> i instanceof Subject).forEach(
+                                            i -> ((Subject) i).setValue(subj)
+                                    );
                                     break;
                                 case "body":
                                     final String body = tagContent;
@@ -316,6 +225,110 @@ public class XmppStreamReader {
             logger.error(e.getMessage(), e);
         }
         return objects;
+    }
+
+    private static Stream makeStream(XMLStreamReader reader) {
+        Stream s = new Stream();
+        logger.info("we found CDR!!!");
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            String name = reader.getAttributeLocalName(i);
+            String val = reader.getAttributeValue(i);
+            switch (name) {
+                case "to":
+                    s.setTo(val);
+                    break;
+                case "version":
+                    s.setVersion(val);
+                    break;
+                case "lang":
+                    s.setLang(val);
+                    break;
+            }
+        }
+        return s;
+    }
+
+    private static Message makeMessage(ChannelId channelId, List<Object> objects, XMLStreamReader reader) {
+        Message msg = new Message();
+        msg.setChannelId(channelId);
+        objects.add(msg);
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            String name = reader.getAttributeLocalName(i);
+            String val = reader.getAttributeValue(i);
+            switch (name) {
+                case "to":
+                    msg.setTo(val);
+                    break;
+                case "id":
+                    msg.setId(val);
+                    break;
+                case "from":
+                    msg.setFrom(val);
+                    break;
+                case "type":
+                    msg.setType(val);
+                    break;
+            }
+        }
+        return msg;
+    }
+
+    private static Iq makeIQ(XMLStreamReader reader) {
+        Iq iq = new Iq();
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            String name = reader.getAttributeLocalName(i);
+            String val = reader.getAttributeValue(i);
+            switch (name) {
+                case "type":
+                    iq.setType(val);
+                    break;
+                case "to":
+                    iq.setTo(val);
+                    break;
+                case "id":
+                    iq.setId(val);
+                    break;
+            }
+        }
+        return iq;
+    }
+
+    private static void makeQuery(List<Object> objects, XMLStreamReader reader) {
+        Optional optionalIq;
+        optionalIq =
+                objects.stream().filter(
+                        i -> i instanceof Iq
+                ).findFirst();
+        if (optionalIq.isPresent()) {
+            Query q = new Query();
+            q.setNamespace(reader.getNamespaceURI());
+            ((Iq) optionalIq.get()).setAny(q);
+        }
+    }
+
+    private static void makeBind(List<Object> objects, XMLStreamReader reader) {
+        Optional optionalIq;
+        optionalIq =
+                objects.stream().filter(
+                        i -> i instanceof Iq
+                ).findFirst();
+        if (optionalIq.isPresent()) {
+            ((Iq) optionalIq.get()).setAny(new Bind());
+        }
+        for (int i = 0; i < reader.getAttributeCount(); i++) {
+            String name = reader.getAttributeLocalName(i);
+            String val = reader.getAttributeValue(i);
+            switch (name) {
+                case "jid":
+                    Bind b = (Bind) ((Iq) optionalIq.get()).getAny();
+                    if (val != null)
+                        b.setJid(val);
+                    break;
+            }
+        }
+        if (objects.get(0) instanceof Stream) {
+            objects.remove(0);
+        }
     }
 }
 

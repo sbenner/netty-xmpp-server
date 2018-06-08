@@ -21,7 +21,7 @@ public class NettyServer {
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(boosGroup, workerGroup);
         bootstrap.channel(NioServerSocketChannel.class);
-
+        SSLHandlerProvider.initSSLContext();
         // ===========================================================
         // 1. define a separate thread pool to execute handlers with
         //    slow business logic. e.g database operation
@@ -41,7 +41,12 @@ public class NettyServer {
                 // 2. run handler with slow business logic
                 //    in separate thread from I/O thread
                 //===========================================================
+
+
+                //pipeline.addLast(group,"ofchannelcrypto", SSLHandlerProvider.getSSLHandler());
                 pipeline.addLast(group, "serverHandler", new ServerHandler());
+
+
             }
         });
 
