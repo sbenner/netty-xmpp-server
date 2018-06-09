@@ -2,10 +2,17 @@
 <properties>
 
 
+    <!--<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'>-->
+    <!--<required/>-->
+    <!--</starttls>-->
+
     <property name="features">
         <value>
             <![CDATA[
         <stream:features>
+ <starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'>
+        <required/>
+    </starttls>
           <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
             <mechanism>PLAIN</mechanism>
           </mechanisms>
@@ -80,7 +87,7 @@
             <![CDATA[
         <iq to='%1$s' from='%2$s' type='result' id='%3$s'>
           <query xmlns='jabber:iq:roster'>
-         <item jid='serg@%2$s'
+         <item jid='serg@10.255.0.67'
           name='Sergey'
           subscription='both'>
             <group>Friends</group>

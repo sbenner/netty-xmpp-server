@@ -69,8 +69,18 @@ public class XmppStreamReader {
 
     static List<Object> read(String xmlstring, ChannelId channelId) {
 
+
         List<Object> objects = new ArrayList<>();
+
+        if (xmlstring.trim().startsWith("<starttls xmlns=")) {
+
+            objects.add("<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
+        }
+
+
         xmlstring = buildXmlString(xmlstring);
+
+
         logger.info("XML READER: " + xmlstring);
 
         try {

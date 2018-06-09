@@ -96,8 +96,14 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             ctx.writeAndFlush("");
             return;
         }
+
+
         String xmlstring = msg.toString();
-        List<Object> objects = new ArrayList<>();
+//        if(xmlstring.startsWith("<proceed")){
+//            ctx.writeAndFlush(xmlstring);
+//        }
+
+        List<Object> objects;
         logger.info("INPUT CHANNEL READ: " + msg.toString());
 
         SessionContext sessionContext = sessionContextMap.get(ctx.channel().id());
@@ -108,7 +114,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             sessionContextMap.put(ctx.channel().id(), sessionContext);
         }
         buffer = sessionContext.getPacketBuffer();
-
 
         if (xmlstring.contains("auth"))//we cleanup the messy stuff
         {
@@ -162,7 +167,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 if (user != null) {
                     sessionContext.setAuthorized(true);
                     sessionContext.setUser(user);
-                    ctx.writeAndFlush(stanzas.getProperty("success") + String.format(stanzas.getProperty("authOk"), sessionContext.getTo()));
+                    ctx.writeAndFlush(stanzas.getProperty("success") +
+                            String.format(stanzas.getProperty("authOk"), sessionContext.getTo()));
                     return;
                 }
 

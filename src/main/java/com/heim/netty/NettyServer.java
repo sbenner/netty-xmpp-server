@@ -19,8 +19,15 @@ public class NettyServer {
         NioEventLoopGroup boosGroup = new NioEventLoopGroup();
         NioEventLoopGroup workerGroup = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
+
         bootstrap.group(boosGroup, workerGroup);
         bootstrap.channel(NioServerSocketChannel.class);
+
+
+        ServerBootstrap bootstrapSSl = new ServerBootstrap();
+        bootstrapSSl.group(boosGroup, workerGroup);
+        bootstrapSSl.channel(NioServerSocketChannel.class);
+
         SSLHandlerProvider.initSSLContext();
         // ===========================================================
         // 1. define a separate thread pool to execute handlers with
@@ -41,16 +48,34 @@ public class NettyServer {
                 // 2. run handler with slow business logic
                 //    in separate thread from I/O thread
                 //===========================================================
-
-
-                //pipeline.addLast(group,"ofchannelcrypto", SSLHandlerProvider.getSSLHandler());
+                //pipeline.addLast(SSLHandlerProvider.getSSLHandler());
                 pipeline.addLast(group, "serverHandler", new ServerHandler());
+            }
+        });
+//
+        bootstrapSSl.childHandler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ChannelPipeline pipeline = ch.pipeline();
+                pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
+                //  pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 5)); // add with name
+                pipeline.addLast(new XmppMsgEncoder()); // add without name, name auto generated
+                pipeline.addLast(new XmppMsgDecoder()); // add without name, name auto generated
+
+                //===========================================================
+                // 2. run handler with slow business logic
+                //    in separate thread from I/O thread
+                //===========================================================
 
 
+                pipeline.addLast(SSLHandlerProvider.getSSLHandler());
+                pipeline.addLast(group, "serverHandler", new ServerHandler());
             }
         });
 
         bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
         bootstrap.bind(5222).sync();
+        bootstrapSSl.childOption(ChannelOption.SO_KEEPALIVE, true);
+        bootstrapSSl.bind(5223).sync();
     }
 }
