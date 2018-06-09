@@ -6,6 +6,7 @@ import com.heim.models.client.*;
 import com.heim.utils.Base64Utils;
 import com.heim.utils.ServiceUtils;
 import io.netty.channel.*;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.jivesoftware.smack.packet.Session;
@@ -20,6 +21,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@ChannelHandler.Sharable
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     //@Autowired
@@ -75,6 +77,26 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     }
 
+    //static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        // Once session is secured, send a greeting and register the channel to the global channel
+        // list so the channel received the messages from others.
+        ctx.pipeline().get(SslHandler.class).handshakeFuture().addListener(
+                future -> {
+//                    ctx.writeAndFlush(
+//                            "Welcome to " + InetAddress.getLocalHost().getHostName() + " secure chat service!\n");
+//                    ctx.writeAndFlush(
+//                            "Your session is protected by " +
+//                                    ctx.pipeline().get(SslHandler.class).engine().getSession().getCipherSuite() +
+//                                    " cipher suite.\n");
+
+                    //channels.add(ctx.channel());
+                });
+    }
+
+
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
@@ -83,8 +105,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         closeFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                SessionContext c = sessionContextMap.remove(ctx.channel().id());
-                authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
+//                SessionContext c = sessionContextMap.remove(ctx.channel().id());
+                //              authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
             }
         });
     }
@@ -99,9 +121,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
 
         String xmlstring = msg.toString();
-//        if(xmlstring.startsWith("<proceed")){
-//            ctx.writeAndFlush(xmlstring);
-//        }
+
 
         List<Object> objects;
         logger.info("INPUT CHANNEL READ: " + msg.toString());
@@ -145,9 +165,40 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+
         for (Object obj : objects) {
 
             logger.info("object: " + obj.toString());
+
+
+            if (obj.toString().startsWith("<proceed")) {
+                ctx.pipeline().addFirst("sslHandler",
+                        new NettySSlHandler(SSLHandlerProvider.initSSLContext()));
+
+                ctx.writeAndFlush(xmlstring);
+//                NettySSlHandler handler = (NettySSlHandler) ctx.pipeline().get("sslHandler");
+//                Future<Channel> f = handler.handshakeFuture();
+//                ((io.netty.util.concurrent.Future<Channel>) f).addListener(
+//                        future -> {
+//                            if (!future.isSuccess()) {
+//                                try {
+//                                        future.cause().printStackTrace();
+//                                } catch (Throwable throwable) {
+//                                    throwable.printStackTrace();
+//                                }
+//                            } else {
+//
+//                            }
+//
+//                        });
+
+            }
+
+
+
+
+
+
 
             if (obj instanceof Stream) {
                 if (!sessionContext.isAuthorized()) {
@@ -195,6 +246,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         }
 
     }
+
 
     private void handleIQ(ChannelHandlerContext ctx, SessionContext sessionContext, Iq obj) {
         Iq res = obj;

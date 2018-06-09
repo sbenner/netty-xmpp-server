@@ -1,7 +1,7 @@
 
 package com.heim.netty;
 
-import io.netty.handler.ssl.SslHandler;
+import io.netty.channel.ChannelHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.cert.CertificateException;
 
+@ChannelHandler.Sharable
 public class SSLHandlerProvider {
     private static final Logger logger = LoggerFactory.getLogger(SSLHandlerProvider.class);
 
@@ -26,22 +27,17 @@ public class SSLHandlerProvider {
     private static final String KEYSTORE_PASSWORD = "123456";
     private static final String CERT_PASSWORD = "123456";
     private static SSLContext serverSSLContext = null;
+    public static SSLEngine sslEngine = null;
 
-    public static SslHandler getSSLHandler() {
-        SSLEngine sslEngine = null;
-        if (serverSSLContext == null) {
-            logger.error("Server SSL context is null");
-            System.exit(-1);
-        } else {
-            sslEngine = serverSSLContext.createSSLEngine();
-            sslEngine.setUseClientMode(false);
-            sslEngine.setNeedClientAuth(false);
-
-        }
-        return new SslHandler(sslEngine);
+    public static SSLContext getSslContext() {
+        if (serverSSLContext != null) return serverSSLContext;
+        return null;
     }
 
-    public static void initSSLContext() {
+
+    public static SSLEngine initSSLContext() {
+        if (sslEngine != null)
+            return sslEngine;
 
         logger.info("Initiating SSL context");
         String algorithm = Security.getProperty(KeyManagerFactory.getDefaultAlgorithm());
@@ -51,7 +47,8 @@ public class SSLHandlerProvider {
         KeyStore ks = null;
         InputStream inputStream = null;
         try {
-            inputStream = new FileInputStream(SSLHandlerProvider.class.getClassLoader().getResource(KEYSTORE).getFile());
+            inputStream = new FileInputStream(SSLHandlerProvider.class.getClassLoader().
+                    getResource(KEYSTORE).getFile());
             ks = KeyStore.getInstance(KEYSTORE_TYPE);
             ks.load(inputStream, KEYSTORE_PASSWORD.toCharArray());
         } catch (IOException e) {
@@ -82,17 +79,19 @@ public class SSLHandlerProvider {
             serverSSLContext.init(keyManagers, trustManagers, null);
 
 //
-//            SSLEngine sslEngine = serverSSLContext.createSSLEngine();
-//            sslEngine.setUseClientMode(false);
-//            sslEngine.setEnabledProtocols(sslEngine.getSupportedProtocols());
-//            sslEngine.setEnabledCipherSuites(sslEngine.getSupportedCipherSuites());
-//            sslEngine.setEnableSessionCreation(true);
+            sslEngine = serverSSLContext.createSSLEngine();
+            sslEngine.setEnabledProtocols(sslEngine.getSupportedProtocols());
+            sslEngine.setEnabledCipherSuites(sslEngine.getSupportedCipherSuites());
+            sslEngine.setUseClientMode(false);
+            sslEngine.setNeedClientAuth(false);
+            sslEngine.setEnableSessionCreation(true);
 
-
+            return sslEngine;
         } catch (Exception e) {
             logger.error("Failed to initialize the server-side SSLContext", e);
         }
 
+        return null;
 
     }
 

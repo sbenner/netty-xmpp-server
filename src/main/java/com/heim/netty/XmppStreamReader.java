@@ -75,6 +75,8 @@ public class XmppStreamReader {
         if (xmlstring.trim().startsWith("<starttls xmlns=")) {
 
             objects.add("<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
+            return objects;
+
         }
 
 

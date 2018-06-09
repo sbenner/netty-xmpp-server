@@ -7,6 +7,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -23,10 +25,10 @@ public class NettyServer {
         bootstrap.group(boosGroup, workerGroup);
         bootstrap.channel(NioServerSocketChannel.class);
 
-
-        ServerBootstrap bootstrapSSl = new ServerBootstrap();
-        bootstrapSSl.group(boosGroup, workerGroup);
-        bootstrapSSl.channel(NioServerSocketChannel.class);
+//
+//        ServerBootstrap bootstrapSSl = new ServerBootstrap();
+//        bootstrapSSl.group(boosGroup, workerGroup);
+//        bootstrapSSl.channel(NioServerSocketChannel.class);
 
         SSLHandlerProvider.initSSLContext();
         // ===========================================================
@@ -35,47 +37,39 @@ public class NettyServer {
         // ===========================================================
         final EventExecutorGroup group = new DefaultEventExecutorGroup(1500); //thread pool of 1500
 
+
         bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
                 pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
                 //  pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 5)); // add with name
-                pipeline.addLast(new XmppMsgEncoder()); // add without name, name auto generated
-                pipeline.addLast(new XmppMsgDecoder()); // add without name, name auto generated
 
+
+                //  pipeline.addLast("xmppEncoder",new XmppMsgEncoder()); // add without name, name auto generated
+                //  pipeline.addLast("xmppDecoder",new XmppMsgDecoder()); // add without name, name auto generated
+
+
+                pipeline.addLast(new StringEncoder());
+                pipeline.addLast(new StringDecoder());
                 //===========================================================
                 // 2. run handler with slow business logic
                 //    in separate thread from I/O thread
                 //===========================================================
                 //pipeline.addLast(SSLHandlerProvider.getSSLHandler());
                 pipeline.addLast(group, "serverHandler", new ServerHandler());
+
+                pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getSslContext()));
+
             }
         });
 //
-        bootstrapSSl.childHandler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
-                ChannelPipeline pipeline = ch.pipeline();
-                pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
-                //  pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 5)); // add with name
-                pipeline.addLast(new XmppMsgEncoder()); // add without name, name auto generated
-                pipeline.addLast(new XmppMsgDecoder()); // add without name, name auto generated
 
-                //===========================================================
-                // 2. run handler with slow business logic
-                //    in separate thread from I/O thread
-                //===========================================================
-
-
-                pipeline.addLast(SSLHandlerProvider.getSSLHandler());
-                pipeline.addLast(group, "serverHandler", new ServerHandler());
-            }
-        });
 
         bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
         bootstrap.bind(5222).sync();
-        bootstrapSSl.childOption(ChannelOption.SO_KEEPALIVE, true);
-        bootstrapSSl.bind(5223).sync();
+        // bootstrap.bind(5223).sync();
+        //  bootstrapSSl.childOption(ChannelOption.SO_KEEPALIVE, true);
+//        bootstrapSSl.bind(5223).sync();
     }
 }
