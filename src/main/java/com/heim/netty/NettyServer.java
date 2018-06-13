@@ -26,55 +26,35 @@ public class NettyServer {
         bootstrap.group(boosGroup, workerGroup);
         bootstrap.channel(NioServerSocketChannel.class);
 
-//
-//        ServerBootstrap bootstrapSSl = new ServerBootstrap();
-//        bootstrapSSl.group(boosGroup, workerGroup);
-//        bootstrapSSl.channel(NioServerSocketChannel.class);
-
-        //   SSLHandlerProvider.initSSLContext();
         // ===========================================================
         // 1. define a separate thread pool to execute handlers with
         //    slow business logic. e.g database operation
         // ===========================================================
         final EventExecutorGroup group = new DefaultEventExecutorGroup(1500); //thread pool of 1500
 
-
         bootstrap.
-
                 handler(new LoggingHandler(LogLevel.DEBUG)).
                 childHandler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
-                ChannelPipeline pipeline = ch.pipeline();
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ChannelPipeline pipeline = ch.pipeline();
+                        //pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
+                        pipeline.addLast("stringEnc", new StringEncoder());
+                        pipeline.addLast("stringDec", new StringDecoder());
+                        //     //===========================================================
+                        // 2. run handler with slow business logic
+                        //    in separate thread from I/O thread
+                        //===========================================================
+                        //pipeline.addLast(SSLHandlerProvider.getSSLHandler());
+                        pipeline.addLast(group, "serverHandler", new ServerHandler());
 
-                //pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
-                //  pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 5)); // add with name
+                        pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getContext(), group));
 
-
-                //  pipeline.addLast("xmppEncoder",new XmppMsgEncoder()); // add without name, name auto generated
-                //  pipeline.addLast("xmppDecoder",new XmppMsgDecoder()); // add without name, name auto generated
-
-
-                pipeline.addLast("stringEnc", new StringEncoder());
-                pipeline.addLast("stringDec", new StringDecoder());
-                //     //===========================================================
-                // 2. run handler with slow business logic
-                //    in separate thread from I/O thread
-                //===========================================================
-                //pipeline.addLast(SSLHandlerProvider.getSSLHandler());
-                pipeline.addLast(group, "serverHandler", new ServerHandler(pipeline));
-
-                pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
-
-            }
-        });
-//
-
+                    }
+                });
 
         bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
         bootstrap.bind(5222).sync();
-        // bootstrap.bind(5223).sync();
-        //  bootstrapSSl.childOption(ChannelOption.SO_KEEPALIVE, true);
-//        bootstrapSSl.bind(5223).sync();
+
     }
 }

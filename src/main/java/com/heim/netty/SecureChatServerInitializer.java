@@ -7,6 +7,7 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a new channel.
@@ -14,9 +15,11 @@ import io.netty.handler.ssl.SslHandler;
 public class SecureChatServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
+    private final EventExecutorGroup group;
 
-    public SecureChatServerInitializer(SslContext sslCtx) {
+    public SecureChatServerInitializer(SslContext sslCtx, EventExecutorGroup group) {
         this.sslCtx = sslCtx;
+        this.group = group;
 
     }
 
@@ -41,14 +44,12 @@ public class SecureChatServerInitializer extends ChannelInitializer<SocketChanne
         
         pipeline.addLast(handler);
 
-
-
         // On top of the SSL handler, add the text line codec.
         //  pipeline.addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
         pipeline.addLast(new StringDecoder());
         pipeline.addLast(new StringEncoder());
         // and then business logic.
         ServerHandler serverHandler = (ServerHandler) pipeline.get("serverHandler");
-        pipeline.addLast(serverHandler);
+        pipeline.addLast(group, serverHandler);
     }
 }
