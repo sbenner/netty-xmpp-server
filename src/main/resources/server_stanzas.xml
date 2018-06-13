@@ -6,7 +6,20 @@
     <!--<required/>-->
     <!--</starttls>-->
 
-    <property name="features">
+    <property name="featuresNoTLS">
+        <value>
+            <![CDATA[
+        <stream:features>
+          <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
+            <mechanism>PLAIN</mechanism>
+          </mechanisms>
+            </stream:features>
+                ]]>
+        </value>
+    </property>
+
+
+    <property name="featuresTLS">
         <value>
             <![CDATA[
         <stream:features>

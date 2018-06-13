@@ -12,6 +12,7 @@ public class SessionContext {
     private String to;
     private String from;
     private String user;
+    private boolean secured;
     private String jid;
     private StringBuilder packetBuffer;
     private Set<Chat> chatThreads;
@@ -92,5 +93,13 @@ public class SessionContext {
 
     public void setChatThreads(Set<Chat> chatThreads) {
         this.chatThreads = chatThreads;
+    }
+
+    public boolean isSecured() {
+        return secured;
+    }
+
+    public void setSecured(boolean secured) {
+        this.secured = secured;
     }
 }

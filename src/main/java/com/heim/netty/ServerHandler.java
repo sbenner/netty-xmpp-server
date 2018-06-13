@@ -6,23 +6,28 @@ import com.heim.models.client.*;
 import com.heim.utils.Base64Utils;
 import com.heim.utils.ServiceUtils;
 import io.netty.channel.*;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.jivesoftware.smack.packet.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-@Component
+
 @ChannelHandler.Sharable
-public class ServerHandler extends ChannelInboundHandlerAdapter {
+public class ServerHandler extends
+        //ChannelInboundHandlerAdapter
+        SimpleChannelInboundHandler<Object> {
 
     //@Autowired
     static Properties stanzas;
@@ -46,6 +51,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    static ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
+
+
     static {
         userRoster.put("serg", stanzas.getProperty("rosterSergey"));
         userRoster.put("test", stanzas.getProperty("rosterTest"));
@@ -58,9 +67,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             5, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>());
 
+    ChannelPipeline pipeline;
 
-    ServerHandler() {
-
+    ServerHandler(ChannelPipeline pipeline) {
+        this.pipeline = pipeline;
         new Thread(() -> {
             try {
                 while (!Thread.interrupted()) {
@@ -77,22 +87,34 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     }
 
-    //static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         // Once session is secured, send a greeting and register the channel to the global channel
         // list so the channel received the messages from others.
-        ctx.pipeline().get(SslHandler.class).handshakeFuture().addListener(
+        SslHandler handler =
+                ctx.pipeline().get(SslHandler.class);
+        if (handler != null)
+            handler.handshakeFuture().addListener(
                 future -> {
+                    logger.info(InetAddress.getLocalHost().getHostAddress() + " secured ");
 //                    ctx.writeAndFlush(
 //                            "Welcome to " + InetAddress.getLocalHost().getHostName() + " secure chat service!\n");
 //                    ctx.writeAndFlush(
-//                            "Your session is protected by " +
-//                                    ctx.pipeline().get(SslHandler.class).engine().getSession().getCipherSuite() +
-//                                    " cipher suite.\n");
+                    logger.info("Your session is protected by " +
+                            ctx.pipeline().get(SslHandler.class).
+                                    engine().getSession().getCipherSuite() +
+                            " cipher suite.\n");
 
+                    SessionContext sessionContext =
+                            sessionContextMap.get(ctx.channel().id());
+                    if (sessionContext != null)
+                        sessionContext.setSecured(true);
                     //channels.add(ctx.channel());
+
+                    //  ctx.writeAndFlush(String.format(stanzas.getProperty("featuresNoTLS")));
+
                 });
     }
 
@@ -111,8 +133,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         });
     }
 
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+
 
         if (msg == null || msg.toString().trim().equals("</stream:stream>")) {
             ctx.writeAndFlush("");
@@ -170,40 +194,28 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
             logger.info("object: " + obj.toString());
 
-
+            //we received starttls and we set proceed
             if (obj.toString().startsWith("<proceed")) {
-                ctx.pipeline().addFirst("sslHandler",
-                        new NettySSlHandler(SSLHandlerProvider.initSSLContext()));
-
                 ctx.writeAndFlush(xmlstring);
-//                NettySSlHandler handler = (NettySSlHandler) ctx.pipeline().get("sslHandler");
-//                Future<Channel> f = handler.handshakeFuture();
-//                ((io.netty.util.concurrent.Future<Channel>) f).addListener(
-//                        future -> {
-//                            if (!future.isSuccess()) {
-//                                try {
-//                                        future.cause().printStackTrace();
-//                                } catch (Throwable throwable) {
-//                                    throwable.printStackTrace();
-//                                }
-//                            } else {
-//
-//                            }
-//
-//                        });
-
+                ctx.pipeline().remove("stringEnc");
+                ctx.pipeline().remove("stringDec");
+                ctx.pipeline().remove("serverHandler");
+                pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
+                //init.initChannel(ctx.channel());
             }
-
-
-
-
-
 
 
             if (obj instanceof Stream) {
                 if (!sessionContext.isAuthorized()) {
-                    ctx.writeAndFlush(String.format(stanzas.getProperty("start"), ((Stream) obj).getTo())
-                            + stanzas.getProperty("features"));
+
+                    SslHandler handler = ctx.pipeline().get(SslHandler.class);
+
+                    ctx.writeAndFlush(String.format(
+                            stanzas.getProperty("start"),
+                            ((Stream) obj).getTo())
+                            + (handler != null ?
+                            stanzas.getProperty("featuresNoTLS") :
+                            stanzas.getProperty("featuresTLS")));
                     sessionContext.setCtx(ctx);
                     sessionContext.setTo(((Stream) obj).getTo());
                 } else if (sessionContext.isAuthorized()) {
@@ -248,12 +260,18 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     }
 
 
+    //@Override
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        logger.info("channelRead0 " + msg.toString());
+        channelRead(ctx, msg);
+    }
+
+
     private void handleIQ(ChannelHandlerContext ctx, SessionContext sessionContext, Iq obj) {
-        Iq res = obj;
         if ((obj.getAny() != null) && obj.getAny() instanceof Bind &&
                 obj.getType().equals("set")) {
-            res.setType("result");
-            Bind b = (Bind) res.getAny();
+            obj.setType("result");
+            Bind b = (Bind) obj.getAny();
             String user = sessionContext.getUser() + "@" + sessionContext.getTo();
             String jid = user + "/" + b.getResource();
             // b.setJid();
@@ -262,7 +280,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             authorizedUserChannels.put(user,
                     sessionContext.getCtx().channel().id());
 
-            ctx.writeAndFlush(String.format(stanzas.getProperty("bindOk"), res.getId(), user, jid));
+            ctx.writeAndFlush(String.format(stanzas.getProperty("bindOk"), obj.getId(), user, jid));
 
         }
         if ((obj.getAny() != null) && obj.getAny() instanceof Session) {

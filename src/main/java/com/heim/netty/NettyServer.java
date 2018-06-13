@@ -9,7 +9,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
@@ -30,7 +29,7 @@ public class NettyServer {
 //        bootstrapSSl.group(boosGroup, workerGroup);
 //        bootstrapSSl.channel(NioServerSocketChannel.class);
 
-        SSLHandlerProvider.initSSLContext();
+        //   SSLHandlerProvider.initSSLContext();
         // ===========================================================
         // 1. define a separate thread pool to execute handlers with
         //    slow business logic. e.g database operation
@@ -42,7 +41,8 @@ public class NettyServer {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
-                pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
+
+                //pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 60));
                 //  pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, 5)); // add with name
 
 
@@ -50,16 +50,16 @@ public class NettyServer {
                 //  pipeline.addLast("xmppDecoder",new XmppMsgDecoder()); // add without name, name auto generated
 
 
-                pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
-                //===========================================================
+                pipeline.addLast("stringEnc", new StringEncoder());
+                pipeline.addLast("stringDec", new StringDecoder());
+                //     //===========================================================
                 // 2. run handler with slow business logic
                 //    in separate thread from I/O thread
                 //===========================================================
                 //pipeline.addLast(SSLHandlerProvider.getSSLHandler());
-                pipeline.addLast(group, "serverHandler", new ServerHandler());
+                pipeline.addLast(group, "serverHandler", new ServerHandler(pipeline));
 
-                pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getSslContext()));
+                //  pipeline.addFirst(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
 
             }
         });
