@@ -51,7 +51,8 @@ public class ServerHandler extends
         }
     }
 
-    static ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    static final ChannelGroup channels =
+            new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
 
 
@@ -62,8 +63,10 @@ public class ServerHandler extends
 
     Logger logger = LoggerFactory.getLogger(ServerHandler.class);
 
-    static Queue<Message> messageQueue = new LinkedBlockingQueue();
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 150,
+    static Queue<Message>
+            messageQueue = new LinkedBlockingQueue();
+    ThreadPoolExecutor
+            executor = new ThreadPoolExecutor(20, 150,
             5, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>());
 
@@ -91,13 +94,31 @@ public class ServerHandler extends
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        // Once session is secured, send a greeting and register the channel to the global channel
+        // Once session is secured, send a greeting and register
+        // the channel to the global channel
         // list so the channel received the messages from others.
         SslHandler handler =
                 ctx.pipeline().get(SslHandler.class);
+//      Promise<Channel> promise=
+//              ((DefaultPromise<Channel>) handler.handshakeFuture()).setSuccess(
+//                ctx.channel()
+//        );
+
+
+//        try {
+//            channels.add((Channel) promise.get());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
         if (handler != null)
             handler.handshakeFuture().addListener(
                 future -> {
+                    if (future.isSuccess()) {
+                        channels.add(ctx.channel());
+                    } else {
+                        future.cause().printStackTrace();
+                    }
                     logger.info(InetAddress.getLocalHost().getHostAddress() + " secured ");
 //                    ctx.writeAndFlush(
 //                            "Welcome to " + InetAddress.getLocalHost().getHostName() + " secure chat service!\n");
@@ -111,27 +132,31 @@ public class ServerHandler extends
                             sessionContextMap.get(ctx.channel().id());
                     if (sessionContext != null)
                         sessionContext.setSecured(true);
-                    //channels.add(ctx.channel());
 
-                    //  ctx.writeAndFlush(String.format(stanzas.getProperty("featuresNoTLS")));
+                    //Channel channel = (Channel) future.get();
+                    //  channels.add(ctx.channel());
 
+                    //  ctx.writeAndFlush("test"+String.format(stanzas.getProperty("featuresNoTLS")));
+                    System.out.println(future.get());
                 });
+
     }
 
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
-        ChannelFuture closeFuture = ctx.channel().closeFuture();
-
-        closeFuture.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-//                SessionContext c = sessionContextMap.remove(ctx.channel().id());
-                //              authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
-            }
-        });
-    }
+//    @Override
+//    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+//        super.channelInactive(ctx);
+//      //  ChannelFuture closeFuture = ctx.channel().closeFuture();
+//
+//        sessionContextMap.remove(ctx.channel().id());
+////        closeFuture.addListener(new ChannelFutureListener() {
+////            @Override
+////            public void operationComplete(ChannelFuture future) throws Exception {
+//////                SessionContext c = sessionContextMap.remove(ctx.channel().id());
+////                //              authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
+////            }
+////        });
+//    }
 
 
     @Override
@@ -196,7 +221,12 @@ public class ServerHandler extends
 
             //we received starttls and we set proceed
             if (obj.toString().startsWith("<proceed")) {
-                ctx.writeAndFlush(xmlstring);
+                ctx.writeAndFlush(obj.toString());
+//
+//                SslHandler handler =
+//                        (SslHandler)ctx.pipeline().get(SslHandler.class);
+//                handler.engine().beginHandshake();
+
                 ctx.pipeline().remove("stringEnc");
                 ctx.pipeline().remove("stringDec");
                 ctx.pipeline().remove("serverHandler");
@@ -208,14 +238,14 @@ public class ServerHandler extends
             if (obj instanceof Stream) {
                 if (!sessionContext.isAuthorized()) {
 
-                    SslHandler handler = ctx.pipeline().get(SslHandler.class);
+                    //  SslHandler handler = ctx.pipeline().get(SslHandler.class);
 
                     ctx.writeAndFlush(String.format(
                             stanzas.getProperty("start"),
-                            ((Stream) obj).getTo())
-                            + (handler != null ?
-                            stanzas.getProperty("featuresNoTLS") :
-                            stanzas.getProperty("featuresTLS")));
+                            ((Stream) obj).getTo()) +
+                            //        + (handler != null ?
+                            //      stanzas.getProperty("featuresNoTLS") :
+                            stanzas.getProperty("featuresTLS"));
                     sessionContext.setCtx(ctx);
                     sessionContext.setTo(((Stream) obj).getTo());
                 } else if (sessionContext.isAuthorized()) {

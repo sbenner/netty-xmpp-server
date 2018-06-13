@@ -4,7 +4,6 @@ package com.heim.netty;
 import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +43,10 @@ public class SSLHandlerProvider {
 
             SslContext sslCtx = SslContextBuilder.
                     forServer(ssc.certificate(), ssc.privateKey())
-                    .sslProvider(SslProvider.JDK)
-                    .protocols("TLSv1.2", "SSLv3", "TLSv1", "TLSv1.1")
-                    .startTls(true)
+
+                    //.sslProvider(SslProvider.JDK)
+                    //.protocols("TLSv1.2", "SSLv3", "TLSv1", "TLSv1.1")
+                    //.startTls(true)
                     .build();
 
 

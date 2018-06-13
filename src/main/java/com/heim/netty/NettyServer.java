@@ -9,6 +9,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
@@ -37,7 +39,10 @@ public class NettyServer {
         final EventExecutorGroup group = new DefaultEventExecutorGroup(1500); //thread pool of 1500
 
 
-        bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+        bootstrap.
+
+                handler(new LoggingHandler(LogLevel.DEBUG)).
+                childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
@@ -59,7 +64,7 @@ public class NettyServer {
                 //pipeline.addLast(SSLHandlerProvider.getSSLHandler());
                 pipeline.addLast(group, "serverHandler", new ServerHandler(pipeline));
 
-                //  pipeline.addFirst(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
+                pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
 
             }
         });

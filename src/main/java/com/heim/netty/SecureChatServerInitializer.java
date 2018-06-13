@@ -39,6 +39,8 @@ public class SecureChatServerInitializer extends ChannelInitializer<SocketChanne
 
         SslHandler handler = sslCtx.newHandler(ch.alloc());
 
+        handler.engine().setUseClientMode(false);
+        
         pipeline.addLast(handler);
 
 
