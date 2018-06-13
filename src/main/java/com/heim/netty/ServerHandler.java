@@ -26,8 +26,9 @@ import java.util.concurrent.TimeUnit;
 
 @ChannelHandler.Sharable
 public class ServerHandler extends
-        //ChannelInboundHandlerAdapter
-        SimpleChannelInboundHandler<Object> {
+        ChannelInboundHandlerAdapter
+//        SimpleChannelInboundHandler<Object>
+{
 
     //@Autowired
     static Properties stanzas;
@@ -162,7 +163,6 @@ public class ServerHandler extends
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-
         if (msg == null || msg.toString().trim().equals("</stream:stream>")) {
             ctx.writeAndFlush("");
             return;
@@ -230,7 +230,7 @@ public class ServerHandler extends
                 ctx.pipeline().remove("stringEnc");
                 ctx.pipeline().remove("stringDec");
                 ctx.pipeline().remove("serverHandler");
-                pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
+                //  pipeline.addLast(new SecureChatServerInitializer(SSLHandlerProvider.getContext()));
                 //init.initChannel(ctx.channel());
             }
 
@@ -243,9 +243,9 @@ public class ServerHandler extends
                     ctx.writeAndFlush(String.format(
                             stanzas.getProperty("start"),
                             ((Stream) obj).getTo()) +
-                            //        + (handler != null ?
-                            //      stanzas.getProperty("featuresNoTLS") :
-                            stanzas.getProperty("featuresTLS"));
+                            (sessionContext.isSecured() ?
+                                    stanzas.getProperty("featuresNoTLS") :
+                                    stanzas.getProperty("featuresTLS")));
                     sessionContext.setCtx(ctx);
                     sessionContext.setTo(((Stream) obj).getTo());
                 } else if (sessionContext.isAuthorized()) {
@@ -270,8 +270,6 @@ public class ServerHandler extends
             if (obj instanceof Presence) {
                 Presence p = (Presence) obj;
                 if (p.getType() != null && p.getType().equals("unavailable")) {
-                    //SessionContext c = sessionContextMap.remove(ctx.channel().id());
-                    //authorizedUserChannels.remove(c.getUser() + "@" + c.getTo());
                     ctx.close();
                 }
             }
