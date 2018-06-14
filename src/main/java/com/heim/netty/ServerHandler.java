@@ -112,6 +112,9 @@ public class ServerHandler extends
                         if (sessionContext != null)
                             sessionContext.setSecured(true);
                     } else {
+                        String fail = "<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>" +
+                                "</stream:stream>";
+                        ctx.writeAndFlush(fail);
                         logger.error(future.cause().getMessage(), future.cause());
                     }
                 });

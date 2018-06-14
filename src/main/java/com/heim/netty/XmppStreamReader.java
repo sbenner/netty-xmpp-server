@@ -61,8 +61,8 @@ public class XmppStreamReader {
             }
             isValid = true;
         } catch (Exception ex) {
-            ex.printStackTrace();
             logger.info("ERRORED " + xmlstring);
+            logger.error(ex.getMessage(), ex);
         }
         return isValid;
     }
