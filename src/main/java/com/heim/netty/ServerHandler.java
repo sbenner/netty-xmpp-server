@@ -303,22 +303,24 @@ public class ServerHandler extends
 
         thread.ifPresent(i -> {
             String threadId = ((ChatThread) i).getValue();
-            Chat c = chatMap.get(threadId);
-            if (c == null) {
-                c = new Chat();
-                c.setThreadId(((ChatThread) i).getValue());
-                Set<String> peers = new HashSet<>();
-                peers.add(obj.getTo());
-                peers.add(obj.getFrom());
-                c.setPeers(peers);
-                chatMap.put(threadId, c);
+            if (threadId != null) {
+                Chat c = chatMap.get(threadId);
+                if (c == null) {
+                    c = new Chat();
+                    c.setThreadId(((ChatThread) i).getValue());
+                    Set<String> peers = new HashSet<>();
+                    peers.add(obj.getTo());
+                    peers.add(obj.getFrom());
+                    c.setPeers(peers);
+                    chatMap.put(threadId, c);
 
-            } else {
-                Set<String> peers = c.getPeers();
-                peers.add(obj.getTo());
-                peers.add(obj.getFrom());
-                c.setPeers(peers);
-                chatMap.put(threadId, c);
+                } else {
+                    Set<String> peers = c.getPeers();
+                    peers.add(obj.getTo());
+                    peers.add(obj.getFrom());
+                    c.setPeers(peers);
+                    chatMap.put(threadId, c);
+                }
             }
         });
 

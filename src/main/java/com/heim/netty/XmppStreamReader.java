@@ -145,14 +145,17 @@ public class XmppStreamReader {
                                 }
                                 break;
                             case "subject":
+                                tagContent = null;
                                 if (msg != null)
                                     msg.getSubjectOrBodyOrThread().add(new Subject());
                                 break;
                             case "body":
+                                tagContent = null;
                                 if (msg != null)
                                     msg.getSubjectOrBodyOrThread().add(new Body());
                                 break;
                             case "thread":
+                                tagContent = null;
                                 if (msg != null)
                                     msg.getSubjectOrBodyOrThread().add(new ChatThread());
                                 break;
