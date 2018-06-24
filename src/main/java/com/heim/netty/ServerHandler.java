@@ -413,7 +413,6 @@ public class ServerHandler extends
             this.message = message;
 
         }
-
         @Override
         public void run() {
             handleMessage(message);
