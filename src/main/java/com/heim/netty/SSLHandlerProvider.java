@@ -41,16 +41,12 @@ public class SSLHandlerProvider {
 //            engine.setEnabledCipherSuites(engine.getSupportedCipherSuites());
 //            engine.setEnableSessionCreation(true);
 
-            SslContext sslCtx = SslContextBuilder.
+            return SslContextBuilder.
                     forServer(ssc.certificate(), ssc.privateKey())
-
                     //.sslProvider(SslProvider.JDK)
                     //.protocols("TLSv1.2", "SSLv3", "TLSv1", "TLSv1.1")
                     //.startTls(true)
                     .build();
-
-
-            return sslCtx;
         } catch (Exception e) {
             e.printStackTrace();
         }
