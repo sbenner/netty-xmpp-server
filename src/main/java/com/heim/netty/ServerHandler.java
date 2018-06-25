@@ -1,5 +1,6 @@
 package com.heim.netty;
 
+import com.heim.models.UserCredentials;
 import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.*;
@@ -70,7 +71,7 @@ public class ServerHandler extends
             5, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>());
 
-    ServerHandler() {
+    public ServerHandler() {
 
         new Thread(() -> {
             try {
@@ -229,10 +230,10 @@ public class ServerHandler extends
             }
             if (obj instanceof Auth) {
 
-                String user = Base64Utils.decode(((Auth) obj).getValue());
-                if (user != null) {
+                UserCredentials userCredentials = Base64Utils.decode(((Auth) obj).getValue());
+                if (userCredentials != null) {
                     sessionContext.setAuthorized(true);
-                    sessionContext.setUser(user);
+                    sessionContext.setUser(userCredentials);
                     ctx.writeAndFlush(stanzas.getProperty("success") +
                             String.format(stanzas.getProperty("authOk"), sessionContext.getTo()));
                     return;

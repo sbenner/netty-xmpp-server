@@ -109,7 +109,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.heim.netty.NettyServer</mainClass>
+                            <mainClass>com.heim.NettyServer</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

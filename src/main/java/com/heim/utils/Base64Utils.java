@@ -1,32 +1,29 @@
 package com.heim.utils;
 
+import com.heim.models.UserCredentials;
+
 import javax.xml.bind.DatatypeConverter;
 
 public class Base64Utils {
 
+    //ValidationService validationService;
+    //
 
-    public static String decode(String encoded) {
+    public static UserCredentials decode(String encoded) {
         byte[] b = DatatypeConverter.parseBase64Binary(encoded);
         String nullTerm = String.valueOf('\0');
         String[] decoded = new String(b).split(nullTerm);
-
-
-        System.out.println(nullTerm);
-        System.out.println(decoded);
-        StringBuilder sb = new StringBuilder();
+        UserCredentials userCredentials = null;
         if (decoded.length > 2) {
-            sb.append(decoded[1]).append(":").append(decoded[2]);
-            String res = sb.toString();
-
+            userCredentials = new UserCredentials();
+            userCredentials.setUsername(decoded[1]);
+            userCredentials.setPassword(decoded[2]);
             //validate user/password if validated return user
-            System.out.println(res);
-            return decoded[1];
         }
-        return null;
-
+        return userCredentials;
     }
 
-    public static void main(String[] args) {
-        decode("AGNhbWVsX3Byb2R1Y2VyADEyMw==");
-    }
+//   // public static void main(String[] args) {
+//        decode("AGNhbWVsX3Byb2R1Y2VyADEyMw==");
+//    }
 }

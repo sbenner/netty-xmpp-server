@@ -1,5 +1,8 @@
-package com.heim.netty;
+package com.heim;
 
+import com.heim.netty.SSLHandlerProvider;
+import com.heim.netty.SecureChatServerInitializer;
+import com.heim.netty.ServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;

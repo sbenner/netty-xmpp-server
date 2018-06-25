@@ -1,6 +1,7 @@
 package com.heim.netty;
 
 
+import com.heim.models.UserCredentials;
 import com.heim.models.client.Chat;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -11,7 +12,7 @@ public class SessionContext {
     private ChannelHandlerContext ctx;
     private String to;
     private String from;
-    private String user;
+    private UserCredentials user;
     private boolean secured;
     private String jid;
     private StringBuilder packetBuffer;
@@ -59,11 +60,11 @@ public class SessionContext {
         this.ctx = ctx;
     }
 
-    public String getUser() {
+    public UserCredentials getUser() {
         return user;
     }
 
-    public void setUser(String user) {
+    public void setUser(UserCredentials user) {
         this.user = user;
     }
 

@@ -1,6 +1,8 @@
 package com.heim.utils;
 
 import org.jivesoftware.smack.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -10,6 +12,8 @@ import java.util.Optional;
 import java.util.Properties;
 
 public class ServiceUtils {
+
+    private static Logger logger = LoggerFactory.getLogger(ServiceUtils.class);
 
     public static Properties loadStanzas() throws Exception {
         Properties properties = new Properties();
@@ -62,7 +66,7 @@ public class ServiceUtils {
 
             }
         } catch (Exception e) {
-            throw e;
+            logger.error(e.getMessage(), e);
         }
         return properties;
     }
