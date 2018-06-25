@@ -230,7 +230,8 @@ public class ServerHandler extends
             }
             if (obj instanceof Auth) {
 
-                UserCredentials userCredentials = Base64Utils.decode(((Auth) obj).getValue());
+                UserCredentials userCredentials =
+                        Base64Utils.decode(((Auth) obj).getValue());
                 if (userCredentials != null) {
                     sessionContext.setAuthorized(true);
                     sessionContext.setUser(userCredentials);
@@ -264,7 +265,7 @@ public class ServerHandler extends
                 obj.getType().equals("set")) {
             obj.setType("result");
             Bind b = (Bind) obj.getAny();
-            String user = sessionContext.getUser() + "@" + sessionContext.getTo();
+            String user = sessionContext.getUser().getUsername() + "@" + sessionContext.getTo();
             String jid = user + "/" + b.getResource();
             sessionContext.setJid(jid);
             authorizedUserChannels.put(user,
@@ -284,7 +285,7 @@ public class ServerHandler extends
             if (obj.getType().equals("get") &&
                     q.getNamespace().endsWith(":roster")) {
                 ctx.writeAndFlush(String.format(
-                        userRoster.get(sessionContext.getUser()),
+                        userRoster.get(sessionContext.getUser().getUsername()),
                         sessionContext.getJid(),
                         sessionContext.getTo(),
                         obj.getId(),
