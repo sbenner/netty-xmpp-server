@@ -90,6 +90,8 @@ public class Message {
     @XmlSchemaType(name = "language")
     protected String lang;
 
+    private long timestamp;
+
     private ChannelId channelId;
 
     /**
@@ -281,4 +283,11 @@ public class Message {
         this.channelId = channelId;
     }
 
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 }

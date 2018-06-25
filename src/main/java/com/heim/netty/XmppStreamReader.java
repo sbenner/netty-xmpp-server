@@ -4,7 +4,6 @@ import com.heim.models.auth.Auth;
 import com.heim.models.bind.Bind;
 import com.heim.models.client.*;
 import io.netty.channel.ChannelId;
-import org.jivesoftware.smack.packet.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -266,6 +265,7 @@ public class XmppStreamReader {
     private static Message makeMessage(ChannelId channelId, List<Object> objects, XMLStreamReader reader) {
         Message msg = new Message();
         msg.setChannelId(channelId);
+        msg.setTimestamp(System.currentTimeMillis());
         objects.add(msg);
         for (int i = 0; i < reader.getAttributeCount(); i++) {
             String name = reader.getAttributeLocalName(i);

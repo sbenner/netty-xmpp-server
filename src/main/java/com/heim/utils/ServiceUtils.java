@@ -1,8 +1,9 @@
 package com.heim.utils;
 
-import org.jivesoftware.smack.util.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -50,7 +51,7 @@ public class ServiceUtils {
 
                         switch (reader.getLocalName()) {
                             case "value":
-                                if (StringUtils.isNotEmpty(propertyName)
+                                if (!StringUtils.isEmpty(propertyName)
                                         && Optional.ofNullable(tagContent).isPresent()) {
                                     properties.setProperty(propertyName, tagContent.toString());
                                     propertyName = null;

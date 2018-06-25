@@ -100,7 +100,8 @@
             <![CDATA[
         <iq to='%1$s' from='%2$s' type='result' id='%3$s'>
           <query xmlns='jabber:iq:roster'>
-         <item jid='serg@10.255.0.67'
+         <item
+         jid='serg@192.168.1.13'
           name='Sergey'
           subscription='both'>
             <group>Friends</group>

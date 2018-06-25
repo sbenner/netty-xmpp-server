@@ -16,7 +16,6 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.jivesoftware.smack.packet.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +33,12 @@ public class ServerHandler extends
 //        SimpleChannelInboundHandler<Object>
 {
 
-    static Properties stanzas;
+    private static Properties stanzas;
 
 
     //TODO:
     //handle user rosters in DB
-    static Map<String, String> userRoster = new HashMap<>();
+    private static Map<String, String> userRoster = new HashMap<>();
     private static Map<ChannelId, SessionContext>
             sessionContextMap = new ConcurrentHashMap<>();
     private static Map<String, ChannelId>
@@ -54,6 +53,7 @@ public class ServerHandler extends
             e.printStackTrace();
         }
     }
+
     static final ChannelGroup channels =
             new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
@@ -62,11 +62,12 @@ public class ServerHandler extends
         userRoster.put("test", stanzas.getProperty("rosterTest"));
     }
 
-    Logger logger = LoggerFactory.getLogger(ServerHandler.class);
+    private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
 
-    static Queue<Message>
-            messageQueue = new LinkedBlockingQueue();
-    ThreadPoolExecutor
+    private Queue<Message> messageQueue = new PriorityQueue<>(
+            Comparator.comparingLong(Message::getTimestamp));
+
+    private ThreadPoolExecutor
             executor = new ThreadPoolExecutor(20, 150,
             5, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>());
@@ -98,27 +99,27 @@ public class ServerHandler extends
                 ctx.pipeline().get(SslHandler.class);
         if (handler != null)
             handler.handshakeFuture().addListener(
-                future -> {
-                    if (future.isSuccess()) {
-                        //channels are removed if they're inactive automatically
-                        //good for future usage of ChatRooms
-                        channels.add(ctx.channel());
-                        logger.info(InetAddress.getLocalHost().getHostAddress() + " secured ");
-                        logger.info("Your session is protected by " +
-                                ctx.pipeline().get(SslHandler.class).
-                                        engine().getSession().getCipherSuite() +
-                                " cipher suite.\n");
-                        SessionContext sessionContext =
-                                sessionContextMap.get(ctx.channel().id());
-                        if (sessionContext != null)
-                            sessionContext.setSecured(true);
-                    } else {
-                        String fail = "<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>" +
-                                "</stream:stream>";
-                        ctx.writeAndFlush(fail);
-                        logger.error(future.cause().getMessage(), future.cause());
-                    }
-                });
+                    future -> {
+                        if (future.isSuccess()) {
+                            //channels are removed if they're inactive automatically
+                            //good for future usage of ChatRooms
+                            channels.add(ctx.channel());
+                            logger.info(InetAddress.getLocalHost().getHostAddress() + " secured ");
+                            logger.info("Your session is protected by " +
+                                    ctx.pipeline().get(SslHandler.class).
+                                            engine().getSession().getCipherSuite() +
+                                    " cipher suite.\n");
+                            SessionContext sessionContext =
+                                    sessionContextMap.get(ctx.channel().id());
+                            if (sessionContext != null)
+                                sessionContext.setSecured(true);
+                        } else {
+                            String fail = "<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>" +
+                                    "</stream:stream>";
+                            ctx.writeAndFlush(fail);
+                            logger.error(future.cause().getMessage(), future.cause());
+                        }
+                    });
 
     }
 
@@ -418,6 +419,7 @@ public class ServerHandler extends
             this.message = message;
 
         }
+
         @Override
         public void run() {
             handleMessage(message);

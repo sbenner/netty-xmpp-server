@@ -5,11 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.heim</groupId>
-    <artifactId>xmpplocal</artifactId>
+    <artifactId>xmpp-netty</artifactId>
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
-
-    <name>A Camel Route</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,22 +16,16 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Camel BOM -->
+
             <dependency>
-                <!-- Import dependency management from Spring Boot -->
+
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>1.5.12.RELEASE</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-parent</artifactId>
-                <version>2.21.1</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -48,29 +40,24 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-core</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-xjc</artifactId>
             <version>2.3.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.eclipse.persistence/org.eclipse.persistence.moxy -->
-        <dependency>
-            <groupId>org.eclipse.persistence</groupId>
-            <artifactId>org.eclipse.persistence.moxy</artifactId>
-            <version>2.7.1</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.eclipse.persistence</groupId>-->
+        <!--<artifactId>org.eclipse.persistence.moxy</artifactId>-->
+        <!--<version>2.7.1</version>-->
+        <!--</dependency>-->
         <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.25.Final</version>
         </dependency>
-
-
 
         <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-tcp &ndash;&gt;-->
         <dependency>
@@ -81,11 +68,11 @@
 
 
         <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-xmpp -->
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-xmpp</artifactId>
-            <version>2.21.1</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.apache.camel</groupId>-->
+        <!--<artifactId>camel-xmpp</artifactId>-->
+        <!--<version>2.21.1</version>-->
+        <!--</dependency>-->
 
     </dependencies>
 
