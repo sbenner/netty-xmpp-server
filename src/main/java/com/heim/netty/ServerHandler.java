@@ -122,13 +122,13 @@ public class ServerHandler extends
 
     }
 
-
+//
 //    @Override
 //    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 //        super.channelInactive(ctx);
-//      //  ChannelFuture closeFuture = ctx.channel().closeFuture();
+//   //     ChannelFuture closeFuture = ctx.channel().closeFuture();
 //
-//        sessionContextMap.remove(ctx.channel().id());
+//        //sessionContextMap.remove(ctx.channel().id());
 ////        closeFuture.addListener(new ChannelFutureListener() {
 ////            @Override
 ////            public void operationComplete(ChannelFuture future) throws Exception {
@@ -297,7 +297,7 @@ public class ServerHandler extends
 
 
     //todo: move this crap outta this class
-    
+
 
     private void handleMessage(Message obj) {
 
@@ -367,14 +367,16 @@ public class ServerHandler extends
                     //we get channelId of a sender
                     //
                     String sendFromUser =
-                            userFromSessionContext.getUser()
+                            userFromSessionContext.getUser().getUsername()
                                     + "@" +
                                     userFromSessionContext.getTo();
 
-                    String sendToUser = userToSessionContext.getUser() + "@" +
+                    String sendToUser = userToSessionContext.getUser().getUsername() + "@" +
                             userToSessionContext.getTo();
 
-                    if (userToSessionContext.getCtx().channel().isWritable()
+                    if (userToSessionContext.getCtx() != null
+                            &&
+                            userToSessionContext.getCtx().channel().isWritable()
                             &&
                             sendToUser.equals(obj.getTo())) {
                         String newMessage = String.format(
@@ -392,6 +394,7 @@ public class ServerHandler extends
                         userToSessionContext.getCtx().writeAndFlush(newMessage);
 
                     } else {
+
                         sessionContextMap.remove(userToSessionContext.getCtx().channel().id());
                         authorizedUserChannels.remove(sendToUser);
                         messageQueue.add(obj);
