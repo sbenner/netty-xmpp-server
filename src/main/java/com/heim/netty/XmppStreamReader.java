@@ -6,7 +6,6 @@ import com.heim.models.client.*;
 import io.netty.channel.ChannelId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -22,7 +21,7 @@ import java.util.Optional;
  * Date: 3/1/17
  * Time: 3:00 PM
  */
-@Component
+
 public class XmppStreamReader {
 
 

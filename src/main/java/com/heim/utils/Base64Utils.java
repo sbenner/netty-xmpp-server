@@ -6,9 +6,6 @@ import javax.xml.bind.DatatypeConverter;
 
 public class Base64Utils {
 
-    //ValidationService validationService;
-    //
-
     public static UserCredentials decode(String encoded) {
         byte[] b = DatatypeConverter.parseBase64Binary(encoded);
         String nullTerm = String.valueOf('\0');
@@ -18,7 +15,6 @@ public class Base64Utils {
             userCredentials = new UserCredentials();
             userCredentials.setUsername(decoded[1]);
             userCredentials.setPassword(decoded[2]);
-            //validate user/password if validated return user
         }
         return userCredentials;
     }

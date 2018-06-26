@@ -3,7 +3,6 @@ package com.heim.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -15,6 +14,7 @@ import java.util.Properties;
 public class ServiceUtils {
 
     private static Logger logger = LoggerFactory.getLogger(ServiceUtils.class);
+
 
     public static Properties loadStanzas() throws Exception {
         Properties properties = new Properties();
@@ -51,7 +51,7 @@ public class ServiceUtils {
 
                         switch (reader.getLocalName()) {
                             case "value":
-                                if (!StringUtils.isEmpty(propertyName)
+                                if (!isEmpty(propertyName)
                                         && Optional.ofNullable(tagContent).isPresent()) {
                                     properties.setProperty(propertyName, tagContent.toString());
                                     propertyName = null;
@@ -70,6 +70,10 @@ public class ServiceUtils {
             logger.error(e.getMessage(), e);
         }
         return properties;
+    }
+
+    private static boolean isEmpty(CharSequence cs) {
+        return cs == null || cs.length() == 0;
     }
 
 }

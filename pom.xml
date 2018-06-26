@@ -14,52 +14,43 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
+    <!--<dependencyManagement>-->
+    <!--<dependencies>-->
 
-            <dependency>
+    <!--<dependency>-->
 
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>1.5.12.RELEASE</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
+    <!--<groupId>org.springframework.boot</groupId>-->
+    <!--<artifactId>spring-boot-dependencies</artifactId>-->
+    <!--<version>1.5.12.RELEASE</version>-->
+    <!--<scope>import</scope>-->
+    <!--<type>pom</type>-->
+    <!--</dependency>-->
 
-        </dependencies>
-    </dependencyManagement>
+    <!--</dependencies>-->
+    <!--</dependencyManagement>-->
 
     <dependencies>
+
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12 -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.25</version>
+
         </dependency>
+
 
         <dependency>
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-xjc</artifactId>
             <version>2.3.0</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.eclipse.persistence/org.eclipse.persistence.moxy -->
-        <!--<dependency>-->
-        <!--<groupId>org.eclipse.persistence</groupId>-->
-        <!--<artifactId>org.eclipse.persistence.moxy</artifactId>-->
-        <!--<version>2.7.1</version>-->
-        <!--</dependency>-->
-        <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.25.Final</version>
         </dependency>
 
-        <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.igniterealtime.smack/smack-tcp &ndash;&gt;-->
         <dependency>
             <groupId>org.igniterealtime.smack</groupId>
             <artifactId>smack-core</artifactId>
@@ -67,12 +58,6 @@
         </dependency>
 
 
-        <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-xmpp -->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.camel</groupId>-->
-        <!--<artifactId>camel-xmpp</artifactId>-->
-        <!--<version>2.21.1</version>-->
-        <!--</dependency>-->
 
     </dependencies>
 
